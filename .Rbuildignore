@@ -1,0 +1,11 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^README\.Rmd$
+^README-.*\.png$
+^\.travis\.yml$
+^Makefile$
+^cran-comments\.md$
+^appveyor\.yml$
+^revdep$
+^.*\.tar\.gz$
+^.*\.pdf$

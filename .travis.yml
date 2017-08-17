@@ -1,0 +1,27 @@
+# R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
+
+language: R
+sudo: false
+cache: packages
+r:
+  - oldrel
+  - release
+  - devel
+
+r_packages:
+  - covr
+  - knitr
+
+after_success:
+  - Rscript -e 'covr::codecov()'
+
+script:
+    - R CMD build .
+    - R CMD check *tar.gz
+    - make README.md
+
+
+notifications:
+  email:
+    on_success: change
+    on_failure: change
