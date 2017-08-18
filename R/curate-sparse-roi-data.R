@@ -4,13 +4,10 @@ curate_sparse_roi_data <- function(
   window=60,#s
   min_points=20#
 ){
-
-  d <- copy(data)
-  d[, t_w := window * floor(t/window)]
-  sparsity <- d[, t_w := window * floor(t/window)]
-  d[,sparsity := .N,by=t_w]
-  d <- d[sparsity >min_points,]
-  d$t_w <- NULL
-  d$sparsity <- NULL
-  d
+  data[, t_w := window * floor(t/window)]
+  data[,n_points := .N, by=t_w]
+  data <- data[n_points > min_points]
+  data[, t_w := NULL]
+  data[, n_points := NULL]
+  data
 }

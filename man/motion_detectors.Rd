@@ -12,10 +12,10 @@ max_velocity_detector(data, time_window_length,
 
 max_velocity_detector_legacy(data, velocity_threshold = 0.006)
 
-virtual_beam_cross_detector(data)
+virtual_beam_cross_detector(data, time_window_length)
 }
 \arguments{
-\item{data}{\code{data.table} containing behavioural variables of \emph{a single animal} (no id).
+\item{data}{\link[data.table:data.table]{data.table::data.table} containing behavioural variables of \emph{a single animal} (no id).
 It must have the columns \code{xy_dist_log10x1000}(for computing subpixel velocity),
 \code{x}(beam cross), \code{t} and \code{has_interacted} (whether a stimulus was delivered).}
 
@@ -31,12 +31,13 @@ a stimulus is delivered (aka interaction).}
 \item{velocity_threshold}{uncorrected velocity above which an animal is classified as `moving' (for the legacy version).}
 }
 \value{
-a data table with the columns:
+an object of the same type as \code{data} (i.e. \link[data.table:data.table]{data.table::data.table} or \link[behavr:behavr]{behavr::behavr})  with additional columns:
 \itemize{
 \item \code{moving} Logical, TRUE iff. motion was detected.
 \item \code{beam_crosses} The number of beam crosses
 (when the animal crosses x = 0.5 -- that is the midpoint of the region of interest) within the time window
 \item \code{max_velocity} The maximal velocity within the time window.
+The resulting data is sampled at a period equals to \code{time_window_length}.
 }
 }
 \description{
@@ -52,11 +53,11 @@ Defines whether a \emph{single animal} is moving according to:
 \link{max_velocity_detector} is the default movement classification for real-time ethoscope experiments.
 It is benchmarked against human-generated ground truth.
 
-These functions are \emph{rarely used directly}, but rather used by \link{sleepAnnotation}.
+These functions are \emph{rarely called directly}, but typically used is in the context of \link{sleep_annotation}.
 }
 \seealso{
+TODO
 \itemize{
-\item Tutorial for sleep analysis with ethoscopes \url{http://gilestrolab.github.io/rethomics/tutorial/todo}
-\item \link{sleepAnnotation} that requieres a motion classifier
+\item \link{sleep_annotation} -- which requieres a motion detector
 }
 }

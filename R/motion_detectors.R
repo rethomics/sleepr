@@ -9,7 +9,7 @@
 #' [max_velocity_detector] is the default movement classification for real-time ethoscope experiments.
 #' It is benchmarked against human-generated ground truth.
 #' @name motion_detectors
-#' @param data `data.table` containing behavioural variables of *a single animal* (no id).
+#' @param data [data.table::data.table] containing behavioural variables of *a single animal* (no id).
 #' It must have the columns `xy_dist_log10x1000`(for computing subpixel velocity),
 #' `x`(beam cross), `t` and `has_interacted` (whether a stimulus was delivered).
 #' @param velocity_correction_coef an empirical coefficient to correct velocity with respect
@@ -18,16 +18,17 @@
 #' @param masking_duration number of second during which any movement is ignored (velocity is set to 0) after
 #' a stimulus is delivered (aka interaction).
 #' @param velocity_threshold uncorrected velocity above which an animal is classified as `moving' (for the legacy version).
-#' @return a data table with the columns:
+#' @return an object of the same type as `data` (i.e. [data.table::data.table] or [behavr::behavr])  with additional columns:
 #' * `moving` Logical, TRUE iff. motion was detected.
 #' * `beam_crosses` The number of beam crosses
 #' (when the animal crosses x = 0.5 -- that is the midpoint of the region of interest) within the time window
 #' * `max_velocity` The maximal velocity within the time window.
+#' The resulting data is sampled at a period equals to `time_window_length`.
 #' @details
-#'  These functions are *rarely used directly*, but rather used by [sleepAnnotation].
+#'  These functions are *rarely called directly*, but typically used is in the context of [sleep_annotation].
 #' @seealso
-#' * Tutorial for sleep analysis with ethoscopes \url{http://gilestrolab.github.io/rethomics/tutorial/todo}
-#' * [sleepAnnotation] that requieres a motion classifier
+#' TODO
+#' * [sleep_annotation] -- which requieres a motion detector
 #' @export
 max_velocity_detector  <- function(data,
                                    time_window_length,
@@ -77,6 +78,7 @@ max_velocity_detector  <- function(data,
   ), by="t_round"]
 
   d_small[, moving :=  ifelse(max_velocity > 1, TRUE,FALSE)]
+  data.table::setnames(d_small, "t_round", "t")
   d_small
 }
 
@@ -96,20 +98,23 @@ max_velocity_detector_legacy <- function(data, velocity_threshold=.006){
   ), by="t_round"]
 
   d_small[, moving :=  ifelse(max_velocity > velocity_threshold, TRUE,FALSE)]
+  data.table::setnames(d_small, "t_round", "t")
   d_small
 }
 
 
 #' @export
 #' @rdname motion_detectors
-virtual_beam_cross_detector <- function(data){
+virtual_beam_cross_detector <- function(data, time_window_length){
   d <- prepare_data_for_motion_detector(data,
-                                        c("t", "`x"),
+                                        c("t", "x"),
                                         time_window_length)
   d[,beam_cross := abs(c(0,diff(sign(.5 - x))))]
   d[,beam_cross := as.logical(beam_cross)]
 
-  d_small <- d[, .(moving = any(beam_cross)), by="t_round"]
+  d_small <- d[,
+               .(moving = any(beam_cross)),
+               by="t_round"]
   data.table::setnames(d_small, "t_round", "t")
   d_small
 }
@@ -126,5 +131,8 @@ prepare_data_for_motion_detector <- function(data,
   needed_columns <- unique(c(needed_columns, intersect(names(data),optional_columns)))
   d <- data.table::copy(data[, needed_columns, with=FALSE])
   d[, t_round := time_window_length * floor(t /time_window_length)]
+  d <- curate_sparse_roi_data(d)
   data.table::setkeyv(d, "t_round")
 }
+
+

@@ -3,7 +3,7 @@
 \name{sleep_annotation}
 \alias{sleep_annotation}
 \alias{sleep_dam_annotation}
-\title{Infer sleep from immobility bouts}
+\title{Score sleep behaviour from immobility}
 \usage{
 sleep_annotation(data, time_window_length = 10, min_time_immobile = 300,
   motion_detector_FUN = max_velocity_detector, ...)
@@ -11,8 +11,9 @@ sleep_annotation(data, time_window_length = 10, min_time_immobile = 300,
 sleep_dam_annotation(data, time_window_length = 60, min_time_immobile = 300)
 }
 \arguments{
-\item{data}{\link{behavr} table containing behavioural variable from multiple (or one) animals.
-It must contain, at least, the column \code{t} in addition to the variables needed for motion classification.}
+\item{data}{\link{data.table} containing behavioural variable from or one multiple animals.
+When it has a key, unique values, are assumed to represent unique inviduals (e.g. in a \link{behavr} table).
+Otherwise, it analysis the data as comming from a single animal. \code{data} must have a column \code{t} representing time.}
 
 \item{time_window_length}{number of seconds to be used by the motion classifier.
 This corresponds to the sampling period of the output data.}
@@ -33,11 +34,17 @@ This function first uses a motion classifier to decide whether an animal is movi
 Then, it defines sleep as contiguous immobility for a minimal duration.
 }
 \details{
-The default \code{time_window_length} is 300 seconds also known as the "5min rule".
-\code{sleepAnnotation} is typically used for ethoscope data, whilst \code{sleepDAMAnnotation} only works on DAM data.
-These function is \emph{rarely used directly}, but rather passed as an argument to a data loading function,
+The default \code{time_window_length} is 300 seconds also known as the "5 minute rule".
+\code{sleep_annotation} is typically used for ethoscope data, whilst \code{sleep_dam_annotation} only works on DAM2 data.
+These functions are \emph{rarely used directly}, but rather passed as an argument to a data loading function,
 so that analysis can be performed on the go.
 }
 \examples{
 #todo
+}
+\seealso{
+\itemize{
+\item \link{motion_detectors} -- options for the \code{motion_detector_FUN} argument
+\item \link{bout_analysis} -- to further analyse sleep bouts in terms of onset and length
+}
 }

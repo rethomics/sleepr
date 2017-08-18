@@ -2,13 +2,14 @@
 #' @importFrom data.table "key"
 NULL
 
-#' Infer sleep from immobility bouts
+#' Score sleep behaviour from immobility
 #'
 #' This function first uses a motion classifier to decide whether an animal is moving during a given time window.
 #' Then, it defines sleep as contiguous immobility for a minimal duration.
 #'
-#' @param data  [behavr] table containing behavioural variable from multiple (or one) animals.
-#' It must contain, at least, the column `t` in addition to the variables needed for motion classification.
+#' @param data  [data.table] containing behavioural variable from or one multiple animals.
+#' When it has a key, unique values, are assumed to represent unique inviduals (e.g. in a [behavr] table).
+#' Otherwise, it analysis the data as comming from a single animal. `data` must have a column `t` representing time.
 #' @param time_window_length number of seconds to be used by the motion classifier.
 #' This corresponds to the sampling period of the output data.
 #' @param min_time_immobile Minimal duration (in s) of a sleep bout.
@@ -18,9 +19,10 @@ NULL
 #' @return a [behavr] table similar to `data` with additional variables/annotations (i.e. `moving` and `asleep`).
 #' The resulting data will only have one data point every `time_window_length` seconds.
 #' @details
-#' The default `time_window_length` is 300 seconds also known as the "5min rule".
-#' `sleepAnnotation` is typically used for ethoscope data, whilst `sleepDAMAnnotation` only works on DAM data.
-#' These function is *rarely used directly*, but rather passed as an argument to a data loading function,
+#'
+#' The default `time_window_length` is 300 seconds also known as the "5 minute rule".
+#' `sleep_annotation` is typically used for ethoscope data, whilst `sleep_dam_annotation` only works on DAM2 data.
+#' These functions are *rarely used directly*, but rather passed as an argument to a data loading function,
 #' so that analysis can be performed on the go.
 #' @examples
 #' #todo
@@ -42,7 +44,9 @@ NULL
 # sleep_dt <- sleepDAMAnnotation(dt_one_animal)
 # ggplot(sleep_dt, aes(t,y="Animal 1",fill=asleep)) +
 #                                    geom_tile() + scale_x_time()
-# @seealso
+#' @seealso
+#' * [motion_detectors] -- options for the `motion_detector_FUN` argument
+#' * [bout_analysis] -- to further analyse sleep bouts in terms of onset and length
 # * Tutorial for sleep analysis with ethoscopes \url{http://gilestrolab.github.io/rethomics/tutorial/todo}
 # * [loadEthoscopeData] and [loadDAM2Data] to load data and optionally apply these analysis on the fly.
 # * [maxVelocityClassifierMasked] the motion classifiers that can be used.
@@ -53,42 +57,42 @@ sleep_annotation <- function(data,
                             motion_detector_FUN = max_velocity_detector,
                             ...
 ){
-  d <- copy(data)
-  ori_keys <- key(d)
-  d <- curateSparseRoiData(d)
-  if(nrow(d) <1)
-    return(NULL)
+  # d <- copy(data)
+  # ori_keys <- key(d)
+  # d <- curateSparseRoiData(d)
+  # todo warn?
+  wrapped <- function(d){
+    if(nrow(d) < 100)
+      return(NULL)
+    # todo if t not unique, stop
 
-  d_small <- motion_classifier_FUN(d, time_window_length,...)
+    d_small <- motion_detector_FUN(d, time_window_length,...)
 
-  # special variable "has interacted". We sum over it
-  if("has_interacted" %in% colnames(d)){
-    d_n_interations <- d[, .(n_interactions = sum(has_interacted)), by=key(d)]
-    d_small <- d_small[d_n_interations]
-    d[, has_interacted := NULL]
+    if(key(d_small) != "t")
+      stop("Key in output of motion_classifier_FUN MUST be `t'")
+
+    # the times to  be queried
+    time_map <- data.table::data.table(t = seq(from=d_small[1,t], to=d_small[.N,t], by=time_window_length),
+                          key = "t")
+    missing_val <- time_map[!d_small]
+
+    d_small <- d_small[time_map,roll=T]
+    d_small[,is_interpolated := FALSE]
+    d_small[missing_val,is_interpolated:=TRUE]
+    d_small[is_interpolated == T, moving := FALSE]
+    d_small[,asleep := sleep_contiguous(moving,
+                                        1/time_window_length,
+                                        min_valid_time = min_time_immobile)]
+    na.omit(d[d_small,
+         on=c("t"),
+         roll=T])
   }
 
-  if(key(d_small) != "t_round")
-    stop("Key in output of motion_classifier_FUN MUST be `t_round'")
-  setnames(d_small,"t_round", "t")
-  d$t <- NULL
-  d_small <- d_small[unique(d,by=key(d))]
-
-  t_out <- seq(from=d_small[1,t], to=d_small[.N,t], by=time_window_length)
-
-  time_map <- data.table(t=t_out,key="t")
-  missing_val <- time_map[!d_small]
-
-  d_small <- d_small[time_map,roll=T]
-  d_small[,is_interpolated := FALSE]
-  d_small[missing_val,is_interpolated:=TRUE]
-
-  d_small[is_interpolated == T, moving := FALSE]
-  d_small[,asleep := sleep_contiguous(moving,
-                                      1/time_window_length,
-                                      min_valid_time = min_time_immobile)]
-  setkeyv(d_small, ori_keys)
-  na.omit(d_small)
+  if(is.null(key(data)))
+     return(wrapped(data))
+  data[,
+       wrapped(.SD),
+       by=key(data)]
 }
 
 
@@ -117,6 +121,6 @@ sleep_dam_annotation <- function(
                      by=key(data)
                     ]
 
-  moving_dt[, asleep := sleepr:::sleep_contiguous(moving, 1/60, 300), by=key(data)]
+  moving_dt[, asleep := sleep_contiguous(moving, 1/60, 300), by=key(data)]
   moving_dt[data, on=c(key(data), "t")]
 }

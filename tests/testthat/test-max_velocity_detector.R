@@ -12,8 +12,6 @@ test_that("max_velocity_detector works", {
 })
 
 
-context("max_velocity_detector")
-
 test_that("max_velocity_detector wans when no interaction and masking", {
   library(behavr)
   dt <- toy_ethoscope_data(duration=days(2))
