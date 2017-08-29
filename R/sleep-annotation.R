@@ -71,6 +71,8 @@ sleep_annotation <- function(data,
     if(key(d_small) != "t")
       stop("Key in output of motion_classifier_FUN MUST be `t'")
 
+    if(nrow(d_small) < 1)
+      return(NULL)
     # the times to  be queried
     time_map <- data.table::data.table(t = seq(from=d_small[1,t], to=d_small[.N,t], by=time_window_length),
                           key = "t")
