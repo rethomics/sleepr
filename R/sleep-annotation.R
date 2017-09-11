@@ -1,5 +1,6 @@
 #' @importFrom data.table ":="
 #' @importFrom data.table "key"
+#' @import behavr
 NULL
 
 #' Score sleep behaviour from immobility
@@ -61,6 +62,11 @@ sleep_annotation <- function(data,
   # ori_keys <- key(d)
   # d <- curateSparseRoiData(d)
   # todo warn?
+
+  # all columns likely to be needed.
+  columns_to_keep <- c("t", "x", "y", "max_velocity", "interactions",
+                       "beam_crosses", "moving","asleep", "is_interpolated")
+
   wrapped <- function(d){
     if(nrow(d) < 100)
       return(NULL)
@@ -85,9 +91,10 @@ sleep_annotation <- function(data,
     d_small[,asleep := sleep_contiguous(moving,
                                         1/time_window_length,
                                         min_valid_time = min_time_immobile)]
-    na.omit(d[d_small,
+    d_small <- na.omit(d[d_small,
          on=c("t"),
          roll=T])
+    d_small[, intersect(columns_to_keep, colnames(d_small)), with=FALSE]
   }
 
   if(is.null(key(data)))

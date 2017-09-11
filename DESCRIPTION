@@ -5,11 +5,11 @@ Version: 0.0.0.9000
 Authors@R: c(
     person("Quentin", "geissmann", role = c("aut", "cre"), email = "qgeissmann@gmail.com")
     )
-Description: Use behavioural variables to score activity and infer sleep from contiguous periods of immobility.
+Description: Use behavioural variables to score activity and infer sleep from bouts of immobility.
 Depends:  
-    R (>= 3.00)
+    R (>= 3.00),
+    behavr
 Imports: 
-  behavr,
   data.table
 Suggests: testthat
 License: GPL-3
