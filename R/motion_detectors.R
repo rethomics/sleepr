@@ -82,6 +82,10 @@ max_velocity_detector  <- function(data,
   d_small
 }
 
+attr(max_velocity_detector, "needed_columns") <- function(...){
+  c("xy_dist_log10x1000", "x", "has_interacted")
+}
+
 #' @export
 #' @rdname motion_detectors
 max_velocity_detector_legacy <- function(data, velocity_threshold=.006){
@@ -102,6 +106,11 @@ max_velocity_detector_legacy <- function(data, velocity_threshold=.006){
   d_small
 }
 
+attr(max_velocity_detector_legacy, "needed_columns") <- function(...){
+  c("xy_dist_log10x1000")
+}
+
+
 
 #' @export
 #' @rdname motion_detectors
@@ -117,6 +126,10 @@ virtual_beam_cross_detector <- function(data, time_window_length){
                by="t_round"]
   data.table::setnames(d_small, "t_round", "t")
   d_small
+}
+
+attr(virtual_beam_cross_detector, "needed_columns") <- function(...){
+  c("x")
 }
 
 #' copy needed columns, and add t_round var for downsampling

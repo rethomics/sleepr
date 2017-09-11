@@ -97,6 +97,12 @@ sleep_annotation <- function(data,
        by=key(data)]
 }
 
+attr(sleep_annotation, "needed_columns") <- function(motion_detector_FUN = max_velocity_detector,
+                                                     ...){
+  needed_columns <- attr(motion_detector_FUN, "needed_columns")
+  if(!is.null(needed_columns))
+    needed_columns(...)
+}
 
 #' @export
 #' @rdname sleep_annotation

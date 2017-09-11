@@ -1,12 +1,13 @@
 Package: sleepr
-Title: Analyse actvity and sleep behaviour
+Title: Analyse Activity and Sleep Behaviour
 Date: 2017-08-17
 Version: 0.0.0.9000
 Authors@R: c(
     person("Quentin", "geissmann", role = c("aut", "cre"), email = "qgeissmann@gmail.com")
     )
 Description: Use behavioural variables to score activity and infer sleep from contiguous periods of immobility.
-Depends:  R (>= 2.10)
+Depends:  
+    R (>= 3.00)
 Imports: 
   behavr,
   data.table
