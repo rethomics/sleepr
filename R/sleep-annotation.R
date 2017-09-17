@@ -1,8 +1,3 @@
-#' @importFrom data.table ":="
-#' @importFrom data.table "key"
-#' @import behavr
-NULL
-
 #' Score sleep behaviour from immobility
 #'
 #' This function first uses a motion classifier to decide whether an animal is moving during a given time window.
