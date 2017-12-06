@@ -54,20 +54,21 @@ curate_dead_animals <- function(data,
 
   wrapped <- function(do){
     d <- copy(do[, c("t", var_name),with=F])
+    setnames(d, var_name, "moving__")
     target_t <-  seq(from=d[,min(t)], to= d[,max(t)], by=time_window / resolution)
     local_means <- sapply(target_t, function(x__){
-      mean(d[t %between% c(x__, x__ + time_window)][[var_name]])
+      mean(d[t %between% c(x__, x__ + time_window), moving__])
     }
     )
 
     first_death_point <- which(local_means <= prop_immobile)[1]
 
     if(is.na(first_death_point))
-      return(d)
+      return(do)
 
     alive_dt <- data.table(t=target_t[first_death_point])
-    last_valid_point <- d[moving==T & t< target_t[first_death_point]][.N, t]
-    d[t <= last_valid_point]
+    last_valid_point <- d[moving__ == T & t < target_t[first_death_point]][.N, t]
+    do[t <= last_valid_point]
   }
   if(is.null(key(data)))
     return(wrapped(data))
