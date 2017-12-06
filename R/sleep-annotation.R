@@ -16,36 +16,43 @@
 #' The resulting data will only have one data point every `time_window_length` seconds.
 #' @details
 #'
-#' The default `time_window_length` is 300 seconds also known as the "5 minute rule".
+#' The default `time_window_length` is 300 seconds -- it is also known as the "5 minute rule".
 #' `sleep_annotation` is typically used for ethoscope data, whilst `sleep_dam_annotation` only works on DAM2 data.
 #' These functions are *rarely used directly*, but rather passed as an argument to a data loading function,
 #' so that analysis can be performed on the go.
 #' @examples
-#' #todo
-# # We strat by making toy data for one animal:
-# dt_one_animal <- toyEthoscopeData(seed=2)
-# ####### Ethoscope, corrected velocity classification #########
-# sleep_dt <-  sleepAnnotation(dt_one_animal, masking_duration=0)
-# print(sleep_dt)
-# # We make a sleep `barecode'
-# ggplot(sleep_dt, aes(t,y="Animal 1",fill=asleep)) +
-#                                    geom_tile() + scale_x_time()
-# ####### Ethoscope, virutal beam cross classification #########
-# sleep_dt2 <-  sleepAnnotation(dt_one_animal,
-#                              motion_classifier_FUN=virtualBeamCrossClassif)
-# ggplot(sleep_dt, aes(t,y="Animal 1",fill=asleep)) +
-#                                    geom_tile() + scale_x_time()
-# #' ####### DAM data, de facto beam cross classification ######
-# dt_one_animal <- toyDAMData(seed=7)
-# sleep_dt <- sleepDAMAnnotation(dt_one_animal)
-# ggplot(sleep_dt, aes(t,y="Animal 1",fill=asleep)) +
-#                                    geom_tile() + scale_x_time()
+# # We start by making toy data for one animal:
+#' dt_one_animal <- toy_ethoscope_data(seed=2)
+#' ####### Ethoscope, corrected velocity classification #########
+#' sleep_dt <-  sleep_annotation(dt_one_animal, masking_duration=0)
+#' print(sleep_dt)
+#' # We could make a sleep `barecode'
+#' \dontrun{
+#' library(ggplot2)
+#' ggplot(sleep_dt, aes(t,y="Animal 1",fill=asleep)) +
+#'                                    geom_tile() + scale_x_time()
+#' }
+#' ####### Ethoscope, virutal beam cross classification #########
+#' sleep_dt2 <-  sleep_annotation(dt_one_animal,
+#'                              motion_detector_FUN=virtual_beam_cross_detector)
+#' \dontrun{
+#' library(ggplot2)
+#' ggplot(sleep_dt2, aes(t,y="Animal 1",fill=asleep)) +
+#'                                    geom_tile() + scale_x_time()
+#' }
+#' ####### DAM data, de facto beam cross classification ######
+#' dt_one_animal <- toy_dam_data(seed=7)
+#' sleep_dt <- sleep_dam_annotation(dt_one_animal)
+#' \dontrun{
+#' library(ggplot2)
+#' ggplot(sleep_dt, aes(t,y="Animal 1",fill=asleep)) +
+#'                                    geom_tile() + scale_x_time()
+#' }
 #' @seealso
 #' * [motion_detectors] -- options for the `motion_detector_FUN` argument
 #' * [bout_analysis] -- to further analyse sleep bouts in terms of onset and length
-# * Tutorial for sleep analysis with ethoscopes \url{http://gilestrolab.github.io/rethomics/tutorial/todo}
-# * [loadEthoscopeData] and [loadDAM2Data] to load data and optionally apply these analysis on the fly.
-# * [maxVelocityClassifierMasked] the motion classifiers that can be used.
+#' @references
+#' * The relevant [rethomic tutorial section](https://rethomics.github.io/sleepr) -- on sleep analysis
 #' @export
 sleep_annotation <- function(data,
                             time_window_length = 10, #s
@@ -53,11 +60,6 @@ sleep_annotation <- function(data,
                             motion_detector_FUN = max_velocity_detector,
                             ...
 ){
-  # d <- copy(data)
-  # ori_keys <- key(d)
-  # d <- curateSparseRoiData(d)
-  # todo warn?
-
   # all columns likely to be needed.
   columns_to_keep <- c("t", "x", "y", "max_velocity", "interactions",
                        "beam_crosses", "moving","asleep", "is_interpolated")
@@ -108,29 +110,26 @@ attr(sleep_annotation, "needed_columns") <- function(motion_detector_FUN = max_v
 
 #' @export
 #' @rdname sleep_annotation
-sleep_dam_annotation <- function(
-  data,
-  time_window_length = 60, #s
-  min_time_immobile = 300 # s 5min rule
-){
-  # if(!is.null(motion_classifier_FUN))
-  #   stop("Cannot use a motion classifier with DAM data")
-  if(! behavr::is.behavr(data))
-    stop("data should be a `behavr` table!")
+sleep_dam_annotation <- function(data,
+                                 min_time_immobile = 300){
 
-  if(! all(c("activity", "t") %in% names(data)))
-    stop("data from DAM should have a column named `activity` and one named `t`")
+  wrapped <- function(d){
+    if(! all(c("activity", "t") %in% names(d)))
+      stop("data from DAM should have a column named `activity` and one named `t`")
 
-  # todo here, check for irregular time series
-  # and concistancy between diff(t) and time_window_length
+      out <- copy(d)
+      col_order <- c(colnames(d),"moving", "asleep")
+      out[, moving := activity > 0]
+      bdt <- bout_analysis(moving, out)
+      bdt[, asleep := duration >= min_time_immobile & !moving]
+      out <- bdt[,.(t, asleep)][out, on = "t", roll=TRUE]
+      setcolorder(out, col_order)
+      out
+  }
 
-
-  moving_dt <- data[,
-                     .(t=t,
-                       moving = activity>0),
-                     by=key(data)
-                    ]
-
-  moving_dt[, asleep := sleep_contiguous(moving, 1/60, 300), by=key(data)]
-  moving_dt[data, on=c(key(data), "t")]
+  if(is.null(key(data)))
+    return(wrapped(data))
+  data[,
+       wrapped(.SD),
+       by=key(data)]
 }

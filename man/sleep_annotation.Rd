@@ -8,7 +8,7 @@
 sleep_annotation(data, time_window_length = 10, min_time_immobile = 300,
   motion_detector_FUN = max_velocity_detector, ...)
 
-sleep_dam_annotation(data, time_window_length = 60, min_time_immobile = 300)
+sleep_dam_annotation(data, min_time_immobile = 300)
 }
 \arguments{
 \item{data}{\link{data.table} containing behavioural variable from or one multiple animals.
@@ -34,13 +34,43 @@ This function first uses a motion classifier to decide whether an animal is movi
 Then, it defines sleep as contiguous immobility for a minimal duration.
 }
 \details{
-The default \code{time_window_length} is 300 seconds also known as the "5 minute rule".
+The default \code{time_window_length} is 300 seconds -- it is also known as the "5 minute rule".
 \code{sleep_annotation} is typically used for ethoscope data, whilst \code{sleep_dam_annotation} only works on DAM2 data.
 These functions are \emph{rarely used directly}, but rather passed as an argument to a data loading function,
 so that analysis can be performed on the go.
 }
 \examples{
-#todo
+dt_one_animal <- toy_ethoscope_data(seed=2)
+####### Ethoscope, corrected velocity classification #########
+sleep_dt <-  sleep_annotation(dt_one_animal, masking_duration=0)
+print(sleep_dt)
+# We could make a sleep `barecode'
+\dontrun{
+library(ggplot2)
+ggplot(sleep_dt, aes(t,y="Animal 1",fill=asleep)) +
+                                   geom_tile() + scale_x_time()
+}
+####### Ethoscope, virutal beam cross classification #########
+sleep_dt2 <-  sleep_annotation(dt_one_animal,
+                             motion_detector_FUN=virtual_beam_cross_detector)
+\dontrun{
+library(ggplot2)
+ggplot(sleep_dt2, aes(t,y="Animal 1",fill=asleep)) +
+                                   geom_tile() + scale_x_time()
+}
+####### DAM data, de facto beam cross classification ######
+dt_one_animal <- toy_dam_data(seed=7)
+sleep_dt <- sleep_dam_annotation(dt_one_animal)
+\dontrun{
+library(ggplot2)
+ggplot(sleep_dt, aes(t,y="Animal 1",fill=asleep)) +
+                                   geom_tile() + scale_x_time()
+}
+}
+\references{
+\itemize{
+\item The relevant \href{https://rethomics.github.io/sleepr}{rethomic tutorial section} -- on sleep analysis
+}
 }
 \seealso{
 \itemize{

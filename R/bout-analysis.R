@@ -18,17 +18,14 @@
 # * [rle] run length encoding function, on which this analysis is based
 #' @export
 bout_analysis <- function(var,data){
-
   var_name <- deparse(substitute(var))
   wrapped <- function(d){
     dt <- data.table::copy(d[, c("t",var_name), with=F])
     data.table::setnames(dt,var_name,"var__")
-
-    dt[,delta_t:= c(0,diff(dt[,t]))]
+    dt[,delta_t:= c(diff(dt[,t]), 0)]
     r <- rle(dt[, var__])
     vals <-r$values
     r$values <- 1:length(r$values)
-
     bdt <- data.table::data.table(delta_t = dt[,delta_t],
                                   bout_id__ = inverse.rle(r),
                                   key="bout_id__")
@@ -45,7 +42,6 @@ bout_analysis <- function(var,data){
     data.table::setnames(dt,"var__",var_name)
     dt
   }
-
   if(is.null(key(data)))
     return(wrapped(data))
   data[,
@@ -53,26 +49,4 @@ bout_analysis <- function(var,data){
        by=key(data)]
 }
 
-#
-# make_bout_dt <- function(x, sdt){
-#   #sdt <- copy(sub_data)
-#   sdt[,delta_t:= c(0,diff(sdt[,t]))]
-#   r <- rle(x)
-#   vals <-r$values
-#   r$values <- 1:length(r$values)
-#
-#   bdt <- data.table::data.table(delta_t = sdt[,delta_t], ..bout_id..=inverse.rle(r),key="..bout_id..")
-#
-#   bout_times <- bdt[,
-#                     .(duration = sum(delta_t)),
-#                     by="..bout_id.."]
-#   r$values <- vals
-#   out <- data.table::data.table(
-#     x = vals,
-#     duration = bout_times[,duration],
-#     t = cumsum(c(0,bout_times[1:.N-1,duration])) + sdt[1,t]
-#   )
-#   var_name <- deparse(substitute(var))
-#   setnames(out,"x",var_name)
-#   out
-# }
+
