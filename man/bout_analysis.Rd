@@ -27,8 +27,28 @@ This function is used to find contiguous regions of unique value
 in a -- potentially irregular/heterogeneous -- univariate categorical time series.
 }
 \examples{
-#TODO
+# Bout analysis on binary variable:
+dt <- toy_dam_data()
+dt[, moving := activity > 0]
+bdt <- bout_analysis(moving,dt)
+print(bdt)
+# With multiple states
+dt <- toy_ethoscope_data()
+# we discretise x position in three states: left, middle and right (1/3 each)
+dt[, location := as.character( cut(x,
+                               breaks = c(0.0, .33, .67, 1.0),
+                               labels = c("left", "middle", "right")))]
+
+bdt <- bout_analysis(location, dt)
+}
+\references{
+\itemize{
+\item The relevant \href{https://rethomics.github.io/sleepr}{rethomic tutorial section} -- on sleep analysis
+}
 }
 \seealso{
-todo
+\itemize{
+\item \link{sleep_annotation} -- to generate a binary sleep variable
+\item \link{rle} run length encoding function -- on which this analysis is based
+}
 }

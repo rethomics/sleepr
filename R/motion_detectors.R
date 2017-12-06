@@ -27,7 +27,6 @@
 #' @details
 #'  These functions are *rarely called directly*, but typically used is in the context of [sleep_annotation].
 #' @seealso
-#' TODO
 #' * [sleep_annotation] -- which requieres a motion detector
 #' @export
 max_velocity_detector  <- function(data,

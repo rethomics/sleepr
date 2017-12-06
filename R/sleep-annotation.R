@@ -15,7 +15,6 @@
 #' @return a [behavr] table similar to `data` with additional variables/annotations (i.e. `moving` and `asleep`).
 #' The resulting data will only have one data point every `time_window_length` seconds.
 #' @details
-#'
 #' The default `time_window_length` is 300 seconds -- it is also known as the "5 minute rule".
 #' `sleep_annotation` is typically used for ethoscope data, whilst `sleep_dam_annotation` only works on DAM2 data.
 #' These functions are *rarely used directly*, but rather passed as an argument to a data loading function,

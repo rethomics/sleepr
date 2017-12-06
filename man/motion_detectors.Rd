@@ -56,7 +56,6 @@ It is benchmarked against human-generated ground truth.
 These functions are \emph{rarely called directly}, but typically used is in the context of \link{sleep_annotation}.
 }
 \seealso{
-TODO
 \itemize{
 \item \link{sleep_annotation} -- which requieres a motion detector
 }
