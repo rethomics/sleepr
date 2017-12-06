@@ -45,19 +45,17 @@ curate_dead_animals <- function(data,
                                 moving_var = moving,
                                 time_window = hours(24),
                                 prop_immobile = 0.01,
-                                resolution=24){
+                                resolution = 24){
 
   var_name <- deparse(substitute(moving_var))
-  var_name =  "moving"
   if(!var_name %in% colnames(data))
     stop("moving_var must be a column of data. ",
          sprintf("No column named '%s'", var_name))
 
   wrapped <- function(d){
-
     target_t <-  seq(from=d[,min(t)], to= d[,max(t)], by=time_window / resolution)
-    local_means <- sapply(target_t, function(x){
-      mean(d[t %between% c(x, x + time_window)][[var_name]])
+    local_means <- sapply(target_t, function(x__){
+      mean(d[t %between% c(x__, x__ + time_window)][[var_name]])
     }
     )
 

@@ -18,7 +18,7 @@ Otherwise, it analysis the data as comming from a single animal. \code{data} mus
 
 \item{prop_immobile}{proportion of immobility that counts as "dead" during time_window (see details)}
 
-\item{resolution}{how much scanning time windo overlap. Expressed as a factor (see details)}
+\item{resolution}{how much scanning windows overlap. Expressed as a factor (see details).}
 }
 \value{
 an object of the same type as \code{data} (i.e. \link[data.table:data.table]{data.table::data.table} or \link[behavr:behavr]{behavr::behavr}).
