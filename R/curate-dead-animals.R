@@ -52,7 +52,8 @@ curate_dead_animals <- function(data,
     stop("moving_var must be a column of data. ",
          sprintf("No column named '%s'", var_name))
 
-  wrapped <- function(d){
+  wrapped <- function(do){
+    d <- copy(do[, c("t", var_name),with=F])
     target_t <-  seq(from=d[,min(t)], to= d[,max(t)], by=time_window / resolution)
     local_means <- sapply(target_t, function(x__){
       mean(d[t %between% c(x__, x__ + time_window)][[var_name]])
