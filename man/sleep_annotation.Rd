@@ -5,15 +5,16 @@
 \alias{sleep_dam_annotation}
 \title{Score sleep behaviour from immobility}
 \usage{
-sleep_annotation(data, time_window_length = 10, min_time_immobile = 300,
-  motion_detector_FUN = max_velocity_detector, ...)
+sleep_annotation(data, time_window_length = 10,
+  min_time_immobile = 300, motion_detector_FUN = max_velocity_detector,
+  ...)
 
 sleep_dam_annotation(data, min_time_immobile = 300)
 }
 \arguments{
 \item{data}{\link{data.table} containing behavioural variable from or one multiple animals.
-When it has a key, unique values, are assumed to represent unique inviduals (e.g. in a \link{behavr} table).
-Otherwise, it analysis the data as comming from a single animal. \code{data} must have a column \code{t} representing time.}
+When it has a key, unique values, are assumed to represent unique individuals (e.g. in a \link{behavr} table).
+Otherwise, it analysis the data as coming from a single animal. \code{data} must have a column \code{t} representing time.}
 
 \item{time_window_length}{number of seconds to be used by the motion classifier.
 This corresponds to the sampling period of the output data.}
@@ -31,10 +32,10 @@ The resulting data will only have one data point every \code{time_window_length}
 }
 \description{
 This function first uses a motion classifier to decide whether an animal is moving during a given time window.
-Then, it defines sleep as contiguous immobility for a minimal duration.
+Then, it defines sleep as contiguous immobility for a minimum duration.
 }
 \details{
-The default \code{time_window_length} is 300 seconds -- it is also known as the "5 minute rule".
+The default \code{time_window_length} is 300 seconds -- it is also known as the "5-minute rule".
 \code{sleep_annotation} is typically used for ethoscope data, whilst \code{sleep_dam_annotation} only works on DAM2 data.
 These functions are \emph{rarely used directly}, but rather passed as an argument to a data loading function,
 so that analysis can be performed on the go.

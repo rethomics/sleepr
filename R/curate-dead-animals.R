@@ -1,6 +1,6 @@
 #' Remove -- irrelevant -- data after individual have died
 #'
-#' This function detects when individuals have died base on their first (very) long bout of immobility.
+#' This function detects when individuals have died based on their first (very) long bout of immobility.
 #' Following data (which may include spurious artefact of movement) are removed.
 #'
 #' @inheritParams sleep_annotation
@@ -14,7 +14,7 @@
 #' Death is defined as `mean(moving_var) < prop_immobile` within a time window.
 #' Moving window start every `time_window/resolution`. `resolution = 1` is fast but means no overlap.
 #' The default would score an animal as dead it does not move more than *one percent of the time* for at least *one day*.
-#' All data following "death" are removed.
+#' All data following a "death" event are removed.
 #'
 #' @return an object of the same type as `data` (i.e. [data.table::data.table] or [behavr::behavr]).
 #'
@@ -46,15 +46,15 @@ curate_dead_animals <- function(data,
                                 time_window = hours(24),
                                 prop_immobile = 0.01,
                                 resolution = 24){
-
+  .N = . = moving__ = moving = .SD  = NULL
   var_name <- deparse(substitute(moving_var))
   if(!var_name %in% colnames(data))
     stop("moving_var must be a column of data. ",
          sprintf("No column named '%s'", var_name))
 
   wrapped <- function(do){
-    d <- copy(do[, c("t", var_name),with=F])
-    setnames(d, var_name, "moving__")
+    d <- data.table::copy(do[, c("t", var_name),with=F])
+    data.table::setnames(d, var_name, "moving__")
     target_t <-  seq(from=d[,min(t)], to= d[,max(t)], by=time_window / resolution)
     local_means <- sapply(target_t, function(x__){
       mean(d[t %between% c(x__, x__ + time_window), moving__])
@@ -66,7 +66,7 @@ curate_dead_animals <- function(data,
     if(is.na(first_death_point))
       return(do)
 
-    alive_dt <- data.table(t=target_t[first_death_point])
+    alive_dt <- data.table::data.table(t=target_t[first_death_point])
     last_valid_point <- d[moving__ == T & t < target_t[first_death_point]][.N, t]
     do[t <= last_valid_point]
   }

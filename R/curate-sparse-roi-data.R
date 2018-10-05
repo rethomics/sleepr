@@ -4,6 +4,7 @@ curate_sparse_roi_data <- function(
   window=60,#s
   min_points=20#
 ){
+  t_w = n_points =.N = NULL
   data[, t_w := window * floor(t/window)]
   data[,n_points := .N, by=t_w]
   data <- data[n_points > min_points]

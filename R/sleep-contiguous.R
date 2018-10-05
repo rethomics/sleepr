@@ -1,5 +1,5 @@
 #' @param moving logical vector of acivity
-#' @param fs sampling frequency (1/s)
+#' @param fs sampling frequency (Hz)
 #' @param min_valid_time the minimal amount immobile time that counts as sleep (s)
 #' @return a boolean vector of the same length as `moving`.
 #' `TRUE` values where and only where `!moving` for a run length of at least 5min

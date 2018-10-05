@@ -9,8 +9,8 @@ curate_dead_animals(data, moving_var = moving, time_window = hours(24),
 }
 \arguments{
 \item{data}{\link{data.table} containing behavioural variable from or one multiple animals.
-When it has a key, unique values, are assumed to represent unique inviduals (e.g. in a \link{behavr} table).
-Otherwise, it analysis the data as comming from a single animal. \code{data} must have a column \code{t} representing time.}
+When it has a key, unique values, are assumed to represent unique individuals (e.g. in a \link{behavr} table).
+Otherwise, it analysis the data as coming from a single animal. \code{data} must have a column \code{t} representing time.}
 
 \item{moving_var}{logical variable in \code{data} used to define the moving (alive) state (default is \code{moving})}
 
@@ -24,7 +24,7 @@ Otherwise, it analysis the data as comming from a single animal. \code{data} mus
 an object of the same type as \code{data} (i.e. \link[data.table:data.table]{data.table::data.table} or \link[behavr:behavr]{behavr::behavr}).
 }
 \description{
-This function detects when individuals have died base on their first (very) long bout of immobility.
+This function detects when individuals have died based on their first (very) long bout of immobility.
 Following data (which may include spurious artefact of movement) are removed.
 }
 \details{
@@ -32,7 +32,7 @@ This function scans the time series looking for "death" in the right (future) da
 Death is defined as \code{mean(moving_var) < prop_immobile} within a time window.
 Moving window start every \code{time_window/resolution}. \code{resolution = 1} is fast but means no overlap.
 The default would score an animal as dead it does not move more than \emph{one percent of the time} for at least \emph{one day}.
-All data following "death" are removed.
+All data following a "death" event are removed.
 }
 \examples{
 dt1 <- toy_activity_data()

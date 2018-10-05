@@ -31,6 +31,7 @@
 #' * The relevant [rethomic tutorial section](https://rethomics.github.io/sleepr) -- on sleep analysis
 #' @export
 bout_analysis <- function(var,data){
+  .SD = NULL
   var_name <- deparse(substitute(var))
   if(!var_name %in% colnames(data))
     stop("var must be a column of data. ",
@@ -44,6 +45,7 @@ bout_analysis <- function(var,data){
 
 #' @noRd
 boot_analysis_wrapped <- function(d, var_name){
+  var__ = . = delta_t = bout_id__ = duration = .N  = NULL
   dt <- data.table::copy(d[, c("t",var_name), with=F])
   data.table::setnames(dt,var_name,"var__")
   dt[,delta_t:= c(diff(dt[,t]), 0)]

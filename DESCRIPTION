@@ -1,12 +1,12 @@
 Package: sleepr
 Title: Analyse Activity and Sleep Behaviour
-Date: 2017-08-17
-Version: 0.0.0.9000
+Date: 2018-10-04
+Version: 0.3.0
 Authors@R: c(
     person("Quentin", "geissmann", role = c("aut", "cre"), email = "qgeissmann@gmail.com")
     )
-Description: Use behavioural variables to score activity and infer sleep from bouts of immobility.
-Depends:  
+Description: Use behavioural variables to score activity and infer sleep from bouts of immobility. It is primarily designed to score sleep in fruit flies from DAM and Ethoscope data.
+Depends: 
     R (>= 3.00),
     behavr
 Imports: 
@@ -22,5 +22,5 @@ Encoding: UTF-8
 LazyData: true
 URL: https://github.com/rethomics/sleepr
 BugReports: https://github.com/rethomics/sleepr/issues
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
 Roxygen: list(markdown = TRUE)

@@ -15,8 +15,8 @@
 #' @param velocity_correction_coef an empirical coefficient to correct velocity with respect
 #'  to variable framerate.
 #' @inheritParams sleep_annotation
-#' @param masking_duration number of second during which any movement is ignored (velocity is set to 0) after
-#' a stimulus is delivered (aka interaction).
+#' @param masking_duration number of seconds during which any movement is ignored (velocity is set to 0) after
+#' a stimulus is delivered (a.k.a. interaction).
 #' @param velocity_threshold uncorrected velocity above which an animal is classified as `moving' (for the legacy version).
 #' @return an object of the same type as `data` (i.e. [data.table::data.table] or [behavr::behavr])  with additional columns:
 #' * `moving` Logical, TRUE iff. motion was detected.
@@ -33,6 +33,9 @@ max_velocity_detector  <- function(data,
                                    time_window_length,
                                    velocity_correction_coef =3e-3,
                                    masking_duration=6){
+  dt = x = .N = . = velocity = moving = dist = beam_cross = has_interacted = NULL
+  dt = beam_crossed =  interaction_id = masked = interactions =  NULL
+  xy_dist_log10x1000 = max_velocity = velocity_corrected = NULL
 
   d <- prepare_data_for_motion_detector(data,
                                         c("t", "xy_dist_log10x1000", "x"),
@@ -89,9 +92,15 @@ attr(max_velocity_detector, "needed_columns") <- function(...){
 #' @rdname motion_detectors
 max_velocity_detector_legacy <- function(data, velocity_threshold=.006){
 
+  dt = x = .N = . = velocity = moving = dist = beam_cross = has_interacted = NULL
+  dt = beam_crossed =  interaction_id = masked = interactions =  NULL
+  xy_dist_log10x1000 = max_velocity = NULL
+  time_window_length = NULL
+
   d <- prepare_data_for_motion_detector(data,
                                         c("t", "xy_dist_log10x1000"),
                                         time_window_length)
+  dt = velocity = NULL
 
   d[,dt := c(NA,diff(t))]
   d[,velocity := 10^(xy_dist_log10x1000/1000)/dt ]
@@ -114,6 +123,7 @@ attr(max_velocity_detector_legacy, "needed_columns") <- function(...){
 #' @export
 #' @rdname motion_detectors
 virtual_beam_cross_detector <- function(data, time_window_length){
+  beam_crosses = x=.= beam_cross= NULL
   d <- prepare_data_for_motion_detector(data,
                                         c("t", "x"),
                                         time_window_length)
@@ -138,6 +148,7 @@ prepare_data_for_motion_detector <- function(data,
                                              time_window_length,
                                              optional_columns=NULL){
   # todo assert no key/unique
+  t_round = NULL
   if(! all(needed_columns %in% names(data)))
     stop(sprintf("data from ethoscope should have columns named %s!", paste(needed_columns, collapse=", ")))
   needed_columns <- unique(c(needed_columns, intersect(names(data),optional_columns)))

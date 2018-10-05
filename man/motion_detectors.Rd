@@ -25,8 +25,8 @@ This corresponds to the sampling period of the output data.}
 \item{velocity_correction_coef}{an empirical coefficient to correct velocity with respect
 to variable framerate.}
 
-\item{masking_duration}{number of second during which any movement is ignored (velocity is set to 0) after
-a stimulus is delivered (aka interaction).}
+\item{masking_duration}{number of seconds during which any movement is ignored (velocity is set to 0) after
+a stimulus is delivered (a.k.a. interaction).}
 
 \item{velocity_threshold}{uncorrected velocity above which an animal is classified as `moving' (for the legacy version).}
 }

@@ -1,11 +1,11 @@
 #' Score sleep behaviour from immobility
 #'
 #' This function first uses a motion classifier to decide whether an animal is moving during a given time window.
-#' Then, it defines sleep as contiguous immobility for a minimal duration.
+#' Then, it defines sleep as contiguous immobility for a minimum duration.
 #'
 #' @param data  [data.table] containing behavioural variable from or one multiple animals.
-#' When it has a key, unique values, are assumed to represent unique inviduals (e.g. in a [behavr] table).
-#' Otherwise, it analysis the data as comming from a single animal. `data` must have a column `t` representing time.
+#' When it has a key, unique values, are assumed to represent unique individuals (e.g. in a [behavr] table).
+#' Otherwise, it analysis the data as coming from a single animal. `data` must have a column `t` representing time.
 #' @param time_window_length number of seconds to be used by the motion classifier.
 #' This corresponds to the sampling period of the output data.
 #' @param min_time_immobile Minimal duration (in s) of a sleep bout.
@@ -15,7 +15,7 @@
 #' @return a [behavr] table similar to `data` with additional variables/annotations (i.e. `moving` and `asleep`).
 #' The resulting data will only have one data point every `time_window_length` seconds.
 #' @details
-#' The default `time_window_length` is 300 seconds -- it is also known as the "5 minute rule".
+#' The default `time_window_length` is 300 seconds -- it is also known as the "5-minute rule".
 #' `sleep_annotation` is typically used for ethoscope data, whilst `sleep_dam_annotation` only works on DAM2 data.
 #' These functions are *rarely used directly*, but rather passed as an argument to a data loading function,
 #' so that analysis can be performed on the go.
@@ -59,6 +59,7 @@ sleep_annotation <- function(data,
                             motion_detector_FUN = max_velocity_detector,
                             ...
 ){
+  moving = .N = is_interpolated  = .SD = asleep = NULL
   # all columns likely to be needed.
   columns_to_keep <- c("t", "x", "y", "max_velocity", "interactions",
                        "beam_crosses", "moving","asleep", "is_interpolated")
@@ -87,7 +88,7 @@ sleep_annotation <- function(data,
     d_small[,asleep := sleep_contiguous(moving,
                                         1/time_window_length,
                                         min_valid_time = min_time_immobile)]
-    d_small <- na.omit(d[d_small,
+    d_small <- stats::na.omit(d[d_small,
          on=c("t"),
          roll=T])
     d_small[, intersect(columns_to_keep, colnames(d_small)), with=FALSE]
@@ -112,17 +113,18 @@ attr(sleep_annotation, "needed_columns") <- function(motion_detector_FUN = max_v
 sleep_dam_annotation <- function(data,
                                  min_time_immobile = 300){
 
+  asleep = moving = activity = duration = .SD = . = NULL
   wrapped <- function(d){
     if(! all(c("activity", "t") %in% names(d)))
       stop("data from DAM should have a column named `activity` and one named `t`")
 
-      out <- copy(d)
+      out <- data.table::copy(d)
       col_order <- c(colnames(d),"moving", "asleep")
       out[, moving := activity > 0]
       bdt <- bout_analysis(moving, out)
       bdt[, asleep := duration >= min_time_immobile & !moving]
       out <- bdt[,.(t, asleep)][out, on = "t", roll=TRUE]
-      setcolorder(out, col_order)
+      data.table::setcolorder(out, col_order)
       out
   }
 
