@@ -37,9 +37,10 @@
 #'   scale_x_time()
 #' }
 #' @seealso
-#' * [sleep_annotation] -- to score movement and sleep
-#' @references
-#' * The relevant [rethomic tutorial section](https://rethomics.github.io/survival) -- on high-resolution survival analysis
+#' * [sleep_annotation] -- to score movement and slepe
+# TODO
+# @references
+# * The relevant [rethomic tutorial section](https://rethomics.github.io/survival) -- on high-resolution survival analysis
 #' @export
 curate_dead_animals <- function(data,
                                 moving_var = moving,

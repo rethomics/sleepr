@@ -53,13 +53,8 @@ ggplot(data=dt1[,test:=1],aes(t, as.numeric(moving))) +
   scale_x_time()
 }
 }
-\references{
-\itemize{
-\item The relevant \href{https://rethomics.github.io/survival}{rethomic tutorial section} -- on high-resolution survival analysis
-}
-}
 \seealso{
 \itemize{
-\item \link{sleep_annotation} -- to score movement and sleep
+\item \link{sleep_annotation} -- to score movement and slepe
 }
 }
