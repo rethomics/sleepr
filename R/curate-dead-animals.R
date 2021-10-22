@@ -37,7 +37,7 @@
 #'   scale_x_time()
 #' }
 #' @seealso
-#' * [sleep_annotation] -- to score movement and slepe
+#' * [sleep_annotation] -- to score movement and sleep
 # TODO
 # @references
 # * The relevant [rethomic tutorial section](https://rethomics.github.io/survival) -- on high-resolution survival analysis
