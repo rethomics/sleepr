@@ -50,11 +50,24 @@ test_that("walking threshold, bouts and windows without frames", {
   expect_equal(bins(c(100, 110, 120.5, 120.5))$walking, c(TRUE, FALSE, TRUE, FALSE))
   expect_false(any(bins(rep(100, 30))$asleep))
   expect_equal(sum(bins(rep(100, 31))$asleep), 30)
-  out <- bins(c(rep(100, 35), NA, rep(100, 35)))
+  out <- bins(c(rep(100, 35), NA, rep(100, 35)), untracked = "break")
   expect_false(out$has_data[36])
   expect_true(out$walking[37])
   expect_true(all(out$asleep[c(2:35, 38:71)]))
   expect_false(any(out$asleep[c(1, 36, 37)]))
+})
+
+test_that("untracked = 'immobile' bridges gaps from the last position seen", {
+  same <- bins(c(rep(100, 35), rep(NA, 5), rep(100, 35)))
+  expect_false(any(same$has_data[36:40]))
+  expect_false(any(same$walking[36:41]))
+  expect_true(all(same$asleep[-1]))
+  moved <- bins(c(rep(100, 35), rep(NA, 5), rep(130, 35)))
+  expect_true(moved$walking[41])
+  expect_true(all(moved$asleep[2:40]))
+  expect_false(moved$asleep[41])
+  expect_true(all(moved$asleep[42:75]))
+  expect_error(bins(rep(100, 5), untracked = "nope"))
 })
 
 test_that("sustained events, the 60-s window and k", {
@@ -89,6 +102,9 @@ test_that("sleep_annotation(rule = 'k') drops inferred frames and keeps the grid
   expect_true(all(c("walking", "sustained", "micro_awake", "is_interpolated") %in% names(out)))
   expect_equal(out$t, (0:159) * 10)
   expect_true(all(out$is_interpolated[81:82]))
+  expect_true(all(out$asleep[-1]))  # untracked = "immobile", the default
+  out <- sleep_annotation(raw_track(160, inferred), rule = "k", untracked = "break",
+                          masking_duration = 0)
   expect_true(out$walking[83])
   expect_true(all(out$asleep[c(2:80, 84:160)]))
   expect_false(any(out$asleep[c(1, 81:83)]))
@@ -132,16 +148,22 @@ test_that("k-rule matches ethoscopy and the reference bin by bin", {
   frames <- data.table::fread(test_path("k_rule_frames.csv"))
   expected <- data.table::fread(test_path("k_rule_bins.csv"))
   expect_true(length(unique(frames$fly)) >= 3)
+  expect_true(sum(expected$asleep_k3 != expected$asleep_k3_immobile) > 100)
   for(fly_id in unique(frames$fly)){
     f <- frames[frames$fly == fly_id]
     f <- f[observed_frames(f$is_inferred)]
     ref <- expected[expected$fly == fly_id]
     for(k in c(3, 2)){
-      out <- k_rule_bins(f$t / 1000, f$x, f$y, f$xy_dist_log10x1000, k = k, pixel = 1)
+      # "break" is the reference rule; "immobile" is checked against ethoscopy
+      out <- k_rule_bins(f$t / 1000, f$x, f$y, f$xy_dist_log10x1000, k = k, pixel = 1,
+                         untracked = "break")
       expect_equal(out$t, ref$t, info = fly_id)
       expect_identical(out$has_data, ref$has_data, info = fly_id)
       expect_identical(out$walking, ref$walking, info = fly_id)
       expect_identical(out$asleep, ref[[paste0("asleep_k", k)]], info = paste(fly_id, k))
+      out <- k_rule_bins(f$t / 1000, f$x, f$y, f$xy_dist_log10x1000, k = k, pixel = 1)
+      expect_identical(out$asleep, ref[[paste0("asleep_k", k, "_immobile")]],
+                       info = paste(fly_id, k, "immobile"))
     }
   }
 })
@@ -149,10 +171,14 @@ test_that("k-rule matches ethoscopy and the reference bin by bin", {
 test_that("sleep_annotation(rule = 'k') reproduces the reference on a real recording", {
   frames <- data.table::fread(test_path("k_rule_frames.csv"))
   expected <- data.table::fread(test_path("k_rule_bins.csv"))
-  f <- frames[frames$fly == "abg_2026"][, `:=`(t = t / 1000, has_interacted = 0L, fly = NULL)]
-  out <- sleep_annotation(f, rule = "k", pixel = 1)
-  ref <- expected[expected$fly == "abg_2026"]
-  expect_equal(out$t, ref$t)
-  expect_identical(out$asleep, ref$asleep_k3)
-  expect_identical(!out$is_interpolated, ref$has_data)
+  for(fly_id in c("abg_2026", "abg_2026_lost")){
+    f <- frames[frames$fly == fly_id][, `:=`(t = t / 1000, has_interacted = 0L, fly = NULL)]
+    ref <- expected[expected$fly == fly_id]
+    out <- sleep_annotation(data.table::copy(f), rule = "k", pixel = 1)
+    expect_equal(out$t, ref$t, info = fly_id)
+    expect_identical(out$asleep, ref$asleep_k3_immobile, info = fly_id)
+    expect_identical(!out$is_interpolated, ref$has_data, info = fly_id)
+    out <- sleep_annotation(data.table::copy(f), rule = "k", pixel = 1, untracked = "break")
+    expect_identical(out$asleep, ref$asleep_k3, info = fly_id)
+  }
 })

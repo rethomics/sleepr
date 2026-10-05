@@ -10,8 +10,15 @@
 #' test. Events in which the position never leaves the pixel it started from
 #' ("subpixel"), and those that jump out and land back within a pixel in one or
 #' two frames ("flicker"), are tracking noise and are ignored; only the remaining
-#' "sustained" events count. Sleep is then 5 minutes or more of tracked windows
-#' with neither walking nor such movement. A window without frames is never sleep.
+#' "sustained" events count. Sleep is then 5 minutes or more of windows with
+#' neither walking nor such movement.
+#'
+#' Windows without frames are handled as in the classic rule. By default
+#' (`untracked = "immobile"`) they count as still, and the first window with frames
+#' after them is walking only if the animal is found more than 10 px from where it
+#' was last seen. Background-subtraction tracking loses still flies, so this is
+#' what keeps their sleep. `untracked = "break"` never scores such windows as sleep
+#' and reproduces the reference rule exactly.
 #'
 #' The rule is tentative and opt-in, through `sleep_annotation(rule = "k")`. The
 #' algorithm and its defaults are identical to ethoscopy's `sleep_rules` module,
@@ -29,6 +36,9 @@
 #' @param velocity_correction_coef as in [max_velocity_detector]; a frame moves
 #' when its corrected velocity exceeds 1.
 #' @param min_sleep_bins shortest sleep bout, in 10-s windows.
+#' @param untracked `"immobile"` counts windows without frames as still and measures
+#' the step after them from the last position seen; `"break"` never scores them as
+#' sleep and counts the window after them as walking (the reference rule).
 #' @seealso [sleep_annotation]
 NULL
 
@@ -88,8 +98,10 @@ k_rule_bins <- function(t, x, y, xy_dist_log10x1000,
                         k = 3,
                         pixel = 1,
                         velocity_correction_coef = 3e-3,
-                        min_sleep_bins = 30){
+                        min_sleep_bins = 30,
+                        untracked = c("immobile", "break")){
   bin = n = .N = . = NULL
+  untracked <- match.arg(untracked)
   if(length(t) == 0)
     return(data.table::data.table(t = numeric(0), has_data = logical(0),
                                   walking = logical(0), sustained = integer(0),
@@ -105,9 +117,18 @@ k_rule_bins <- function(t, x, y, xy_dist_log10x1000,
   first <- min(frame_bin)
   grid <- medians[data.table::data.table(bin = seq(first, max(frame_bin))), on = "bin"]
   has_data <- !is.na(grid$n)
-  step <- sqrt(c(NA, diff(grid$x))^2 + c(NA, diff(grid$y))^2)
-  # an unknown step (first window, or a neighbouring window without frames) counts as walking
+  gx <- grid$x
+  gy <- grid$y
+  if(untracked == "immobile"){
+    # compare with the last position seen, so a gap hides no walking it bridges
+    gx <- data.table::nafill(gx, type = "locf")
+    gy <- data.table::nafill(gy, type = "locf")
+  }
+  step <- sqrt(c(NA, diff(gx))^2 + c(NA, diff(gy))^2)
+  # an unknown step (the first window; with "break", a window next to a gap) is walking
   still <- has_data & !is.na(step) & step <= WALK_SHIFT_PIXELS * pixel
+  if(untracked == "immobile")
+    still <- still | !has_data
 
   moving <- 10 ^ (as.numeric(xy_dist_log10x1000) / 1000) / velocity_correction_coef > 1
   events <- classify_events(x, y, moving, tolerance = RETURN_TOLERANCE_PIXELS * pixel)
@@ -157,7 +178,7 @@ check_k_rule_args <- function(time_window_length, k, pixel, dots){
 #' the body of sleep_annotation(rule = "k") for one animal
 #' @noRd
 k_rule_annotation <- function(d, time_window_length, min_time_immobile,
-                              motion_detector_FUN, k, pixel, columns_to_keep, ...){
+                              motion_detector_FUN, k, pixel, untracked, columns_to_keep, ...){
   moving = is_interpolated = walking = sustained = micro_awake = asleep = t = NULL
   # only the rule ignores inferred frames; the classic columns use every frame
   observed <- d
@@ -171,7 +192,8 @@ k_rule_annotation <- function(d, time_window_length, min_time_immobile,
                     k = k,
                     pixel = if(is.null(pixel)) pixel_size(observed$x) else pixel,
                     velocity_correction_coef = coef,
-                    min_sleep_bins = min_time_immobile / time_window_length)
+                    min_sleep_bins = min_time_immobile / time_window_length,
+                    untracked = untracked)
   time_map <- data.table::data.table(t = kb$t, key = "t")
   d_small <- motion_detector_FUN(d, time_window_length, ...)
   # the rule is scored even where the classic detector found too few frames

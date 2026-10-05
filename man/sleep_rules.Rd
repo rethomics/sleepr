@@ -22,7 +22,8 @@ k_rule_bins(
   k = 3,
   pixel = 1,
   velocity_correction_coef = 0.003,
-  min_sleep_bins = 30
+  min_sleep_bins = 30,
+  untracked = c("immobile", "break")
 )
 }
 \arguments{
@@ -46,6 +47,10 @@ k_rule_bins(
 when its corrected velocity exceeds 1.}
 
 \item{min_sleep_bins}{shortest sleep bout, in 10-s windows.}
+
+\item{untracked}{\code{"immobile"} counts windows without frames as still and measures
+the step after them from the last position seen; \code{"break"} never scores them as
+sleep and counts the window after them as walking (the reference rule).}
 }
 \description{
 The classic rule calls a 10-s window "moving" when any frame's velocity
@@ -59,8 +64,15 @@ A movement event is a run of consecutive frames above the classic velocity
 test. Events in which the position never leaves the pixel it started from
 ("subpixel"), and those that jump out and land back within a pixel in one or
 two frames ("flicker"), are tracking noise and are ignored; only the remaining
-"sustained" events count. Sleep is then 5 minutes or more of tracked windows
-with neither walking nor such movement. A window without frames is never sleep.
+"sustained" events count. Sleep is then 5 minutes or more of windows with
+neither walking nor such movement.
+
+Windows without frames are handled as in the classic rule. By default
+(\code{untracked = "immobile"}) they count as still, and the first window with frames
+after them is walking only if the animal is found more than 10 px from where it
+was last seen. Background-subtraction tracking loses still flies, so this is
+what keeps their sleep. \code{untracked = "break"} never scores such windows as sleep
+and reproduces the reference rule exactly.
 
 The rule is tentative and opt-in, through \code{sleep_annotation(rule = "k")}. The
 algorithm and its defaults are identical to ethoscopy's \code{sleep_rules} module,

@@ -34,13 +34,15 @@ Immobility bouts longer or equal to this value are considered as sleep.}
 
 \item{untracked}{how windows with no tracked data enter sleep scoring. \code{"immobile"} (default) counts them
 as immobility, so they can extend or create sleep bouts; \code{"break"} ends a bout at them, so sleep is only
-scored where the animal was seen still. \code{moving} is unaffected either way. Ignored with \code{rule = "k"}.}
+scored where the animal was seen still. \code{moving} is unaffected either way. With \code{rule = "k"}, \code{"immobile"}
+also measures the step after such windows from the last position seen.}
 
 \item{rule}{\code{"classic"} (default) scores a window as sleep when no frame passed the movement threshold
 for \code{min_time_immobile}. \code{"k"} (tentative) scores it from walking and sustained movement events,
 ignoring tracking noise (see \link{sleep_rules}). It adds the columns \code{walking}, \code{sustained} and
-\code{micro_awake}, leaves the classic ones as they are, never scores a window without frames as sleep,
-and drops frames the tracker inferred. It needs 10-s windows and does not take \code{velocity_threshold}.}
+\code{micro_awake}, leaves the classic ones as they are and drops frames the tracker inferred. With
+\code{untracked = "break"} it reproduces the reference rule exactly. It needs 10-s windows and does not take
+\code{velocity_threshold}.}
 
 \item{k}{with \code{rule = "k"}, sustained events within a centred 60-s window that make a window awake.}
 

@@ -13,12 +13,14 @@
 #' @param motion_detector_FUN function used to classify movement
 #' @param untracked how windows with no tracked data enter sleep scoring. `"immobile"` (default) counts them
 #' as immobility, so they can extend or create sleep bouts; `"break"` ends a bout at them, so sleep is only
-#' scored where the animal was seen still. `moving` is unaffected either way. Ignored with `rule = "k"`.
+#' scored where the animal was seen still. `moving` is unaffected either way. With `rule = "k"`, `"immobile"`
+#' also measures the step after such windows from the last position seen.
 #' @param rule `"classic"` (default) scores a window as sleep when no frame passed the movement threshold
 #' for `min_time_immobile`. `"k"` (tentative) scores it from walking and sustained movement events,
 #' ignoring tracking noise (see [sleep_rules]). It adds the columns `walking`, `sustained` and
-#' `micro_awake`, leaves the classic ones as they are, never scores a window without frames as sleep,
-#' and drops frames the tracker inferred. It needs 10-s windows and does not take `velocity_threshold`.
+#' `micro_awake`, leaves the classic ones as they are and drops frames the tracker inferred. With
+#' `untracked = "break"` it reproduces the reference rule exactly. It needs 10-s windows and does not take
+#' `velocity_threshold`.
 #' @param k with `rule = "k"`, sustained events within a centred 60-s window that make a window awake.
 #' @param pixel with `rule = "k"`, one pixel in the units of `x`/`y`. `NULL` infers it ([pixel_size]):
 #' 1 for positions in pixels, 1/500 for positions as a fraction of the ROI width (as scopr loads them).
@@ -87,7 +89,7 @@ sleep_annotation <- function(data,
   wrapped <- function(d){
     if(rule == "k")
       return(k_rule_annotation(d, time_window_length, min_time_immobile,
-                               motion_detector_FUN, k, pixel, columns_to_keep, ...))
+                               motion_detector_FUN, k, pixel, untracked, columns_to_keep, ...))
     if(nrow(d) < 100)
       return(NULL)
     # todo if t not unique, stop
