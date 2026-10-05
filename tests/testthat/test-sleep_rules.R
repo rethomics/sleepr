@@ -94,6 +94,20 @@ test_that("sleep_annotation(rule = 'k') drops inferred frames and keeps the grid
   expect_false(any(out$asleep[c(1, 81:83)]))
 })
 
+test_that("classic columns under rule = 'k' are those of rule = 'classic'", {
+  inferred <- rep(0L, 1200)
+  inferred[501:505] <- 1L
+  d <- raw_track(120, inferred)
+  # inferred frames repeating a movement: classic counts them, the k-rule drops them
+  d[501:505, xy_dist_log10x1000 := MOVE]
+  classic <- sleep_annotation(data.table::copy(d), masking_duration = 0)
+  k <- sleep_annotation(data.table::copy(d), rule = "k", masking_duration = 0)
+  shared <- intersect(setdiff(names(classic), "asleep"), names(k))
+  expect_equal(k[t %in% classic$t, shared, with = FALSE], classic[, shared, with = FALSE])
+  expect_true(classic[t == 500, moving] && k[t == 500, moving])
+  expect_true(k[t == 500, asleep])
+})
+
 test_that("sleep_annotation(rule = 'k') rejects what the rule does not take", {
   d <- raw_track()
   expect_error(sleep_annotation(d, rule = "k", velocity_threshold = 1))

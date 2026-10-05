@@ -159,15 +159,17 @@ check_k_rule_args <- function(time_window_length, k, pixel, dots){
 k_rule_annotation <- function(d, time_window_length, min_time_immobile,
                               motion_detector_FUN, k, pixel, columns_to_keep, ...){
   moving = is_interpolated = walking = sustained = micro_awake = asleep = t = NULL
+  # only the rule ignores inferred frames; the classic columns use every frame
+  observed <- d
   if("is_inferred" %in% colnames(d))
-    d <- d[observed_frames(d$is_inferred)]
-  if(nrow(d) < 100)
+    observed <- d[observed_frames(d$is_inferred)]
+  if(nrow(observed) < 100)
     return(NULL)
   dots <- list(...)
   coef <- if(is.null(dots$velocity_correction_coef)) 3e-3 else dots$velocity_correction_coef
-  kb <- k_rule_bins(d$t, d$x, d$y, d$xy_dist_log10x1000,
+  kb <- k_rule_bins(observed$t, observed$x, observed$y, observed$xy_dist_log10x1000,
                     k = k,
-                    pixel = if(is.null(pixel)) pixel_size(d$x) else pixel,
+                    pixel = if(is.null(pixel)) pixel_size(observed$x) else pixel,
                     velocity_correction_coef = coef,
                     min_sleep_bins = min_time_immobile / time_window_length)
   time_map <- data.table::data.table(t = kb$t, key = "t")
