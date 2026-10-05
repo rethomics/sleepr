@@ -5,9 +5,14 @@
 \alias{sleep_dam_annotation}
 \title{Score sleep behaviour from immobility}
 \usage{
-sleep_annotation(data, time_window_length = 10,
-  min_time_immobile = 300, motion_detector_FUN = max_velocity_detector,
-  ...)
+sleep_annotation(
+  data,
+  time_window_length = 10,
+  min_time_immobile = 300,
+  motion_detector_FUN = max_velocity_detector,
+  untracked = c("immobile", "break"),
+  ...
+)
 
 sleep_dam_annotation(data, min_time_immobile = 300)
 }
@@ -23,6 +28,10 @@ This corresponds to the sampling period of the output data.}
 Immobility bouts longer or equal to this value are considered as sleep.}
 
 \item{motion_detector_FUN}{function used to classify movement}
+
+\item{untracked}{how windows with no tracked data enter sleep scoring. \code{"immobile"} (default) counts them
+as immobility, so they can extend or create sleep bouts; \code{"break"} ends a bout at them, so sleep is only
+scored where the animal was seen still. \code{moving} is unaffected either way.}
 
 \item{...}{extra arguments to be passed to \code{motion_classifier_FUN}.}
 }

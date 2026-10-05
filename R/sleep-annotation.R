@@ -11,6 +11,9 @@
 #' @param min_time_immobile Minimal duration (in s) of a sleep bout.
 #' Immobility bouts longer or equal to this value are considered as sleep.
 #' @param motion_detector_FUN function used to classify movement
+#' @param untracked how windows with no tracked data enter sleep scoring. `"immobile"` (default) counts them
+#' as immobility, so they can extend or create sleep bouts; `"break"` ends a bout at them, so sleep is only
+#' scored where the animal was seen still. `moving` is unaffected either way.
 #' @param ... extra arguments to be passed to `motion_classifier_FUN`.
 #' @return a [behavr] table similar to `data` with additional variables/annotations (i.e. `moving` and `asleep`).
 #' The resulting data will only have one data point every `time_window_length` seconds.
@@ -57,11 +60,13 @@ sleep_annotation <- function(data,
                             time_window_length = 10, #s
                             min_time_immobile = 300, #s = 5min
                             motion_detector_FUN = max_velocity_detector,
+                            untracked = c("immobile", "break"),
                             ...
 ){
   moving = .N = is_interpolated  = .SD = asleep = NULL
+  untracked <- match.arg(untracked)
   # all columns likely to be needed.
-  columns_to_keep <- c("t", "x", "y", "max_velocity", "interactions",
+  columns_to_keep <- c("t", "x", "y", "max_velocity", "velocity_threshold", "interactions",
                        "beam_crosses", "moving","asleep", "is_interpolated")
 
   wrapped <- function(d){
@@ -85,7 +90,10 @@ sleep_annotation <- function(data,
     d_small[,is_interpolated := FALSE]
     d_small[missing_val,is_interpolated:=TRUE]
     d_small[is_interpolated == T, moving := FALSE]
-    d_small[,asleep := sleep_contiguous(moving,
+    sleep_breaking <- d_small$moving
+    if(untracked == "break")
+      sleep_breaking <- sleep_breaking | d_small$is_interpolated
+    d_small[,asleep := sleep_contiguous(sleep_breaking,
                                         1/time_window_length,
                                         min_valid_time = min_time_immobile)]
     d_small <- stats::na.omit(d[d_small,

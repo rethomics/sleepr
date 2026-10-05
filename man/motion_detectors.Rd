@@ -7,8 +7,18 @@
 \alias{virtual_beam_cross_detector}
 \title{Motion detector for Ethocope data}
 \usage{
-max_velocity_detector(data, time_window_length,
-  velocity_correction_coef = 0.003, masking_duration = 6)
+max_velocity_detector(
+  data,
+  time_window_length,
+  velocity_correction_coef = 0.003,
+  masking_duration = 6,
+  velocity_threshold = 1,
+  threshold_quantile = 0.99,
+  threshold_floor = 1,
+  day_length = 24,
+  lights_off = 12,
+  remove_spikes = NULL
+)
 
 max_velocity_detector_legacy(data, velocity_threshold = 0.006)
 
@@ -28,12 +38,28 @@ to variable framerate.}
 \item{masking_duration}{number of seconds during which any movement is ignored (velocity is set to 0) after
 a stimulus is delivered (a.k.a. interaction).}
 
-\item{velocity_threshold}{uncorrected velocity above which an animal is classified as `moving' (for the legacy version).}
+\item{velocity_threshold}{for \link{max_velocity_detector}, corrected velocity above which an animal is
+classified as \verb{moving' (default 1), or }"auto"` to estimate it from the animal's own tracking noise,
+separately for the light and dark phase (see \link{motion_calibration}).
+For \link{max_velocity_detector_legacy}, the uncorrected velocity threshold.}
+
+\item{threshold_quantile, threshold_floor}{with \code{velocity_threshold = "auto"}, the quantile of still-window
+velocity used as threshold (a still animal is scored as moving in \code{1 - quantile} of windows)
+and the lowest threshold allowed.}
+
+\item{day_length, lights_off}{with \code{velocity_threshold = "auto"}, the light cycle in hours used to split
+light and dark phase; \code{t} must be 0 at lights on.}
+
+\item{remove_spikes}{drop tracking spikes -- frames where the centroid jumps more than 3 px and lands back
+on the same pixel within two frames (see \link{find_spikes}) -- before computing velocity and position.
+\code{NULL} (default) enables it together with \code{velocity_threshold = "auto"}, whose calibration they would
+otherwise inflate.}
 }
 \value{
 an object of the same type as \code{data} (i.e. \link[data.table:data.table]{data.table::data.table} or \link[behavr:behavr]{behavr::behavr})  with additional columns:
 \itemize{
 \item \code{moving} Logical, TRUE iff. motion was detected.
+\item \code{velocity_threshold} (only with \code{velocity_threshold = "auto"}) the threshold applied to each window.
 \item \code{beam_crosses} The number of beam crosses
 (when the animal crosses x = 0.5 -- that is the midpoint of the region of interest) within the time window
 \item \code{max_velocity} The maximal velocity within the time window.
