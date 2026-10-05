@@ -11,6 +11,9 @@ sleep_annotation(
   min_time_immobile = 300,
   motion_detector_FUN = max_velocity_detector,
   untracked = c("immobile", "break"),
+  rule = c("classic", "k"),
+  k = 3,
+  pixel = NULL,
   ...
 )
 
@@ -31,7 +34,18 @@ Immobility bouts longer or equal to this value are considered as sleep.}
 
 \item{untracked}{how windows with no tracked data enter sleep scoring. \code{"immobile"} (default) counts them
 as immobility, so they can extend or create sleep bouts; \code{"break"} ends a bout at them, so sleep is only
-scored where the animal was seen still. \code{moving} is unaffected either way.}
+scored where the animal was seen still. \code{moving} is unaffected either way. Ignored with \code{rule = "k"}.}
+
+\item{rule}{\code{"classic"} (default) scores a window as sleep when no frame passed the movement threshold
+for \code{min_time_immobile}. \code{"k"} (tentative) scores it from walking and sustained movement events,
+ignoring tracking noise (see \link{sleep_rules}). It adds the columns \code{walking}, \code{sustained} and
+\code{micro_awake}, leaves the classic ones as they are, never scores a window without frames as sleep,
+and drops frames the tracker inferred. It needs 10-s windows and does not take \code{velocity_threshold}.}
+
+\item{k}{with \code{rule = "k"}, sustained events within a centred 60-s window that make a window awake.}
+
+\item{pixel}{with \code{rule = "k"}, one pixel in the units of \code{x}/\code{y}. \code{NULL} infers it (\link{pixel_size}):
+1 for positions in pixels, 1/500 for positions as a fraction of the ROI width (as scopr loads them).}
 
 \item{...}{extra arguments to be passed to \code{motion_classifier_FUN}.}
 }

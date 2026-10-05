@@ -13,7 +13,15 @@
 #' @param motion_detector_FUN function used to classify movement
 #' @param untracked how windows with no tracked data enter sleep scoring. `"immobile"` (default) counts them
 #' as immobility, so they can extend or create sleep bouts; `"break"` ends a bout at them, so sleep is only
-#' scored where the animal was seen still. `moving` is unaffected either way.
+#' scored where the animal was seen still. `moving` is unaffected either way. Ignored with `rule = "k"`.
+#' @param rule `"classic"` (default) scores a window as sleep when no frame passed the movement threshold
+#' for `min_time_immobile`. `"k"` (tentative) scores it from walking and sustained movement events,
+#' ignoring tracking noise (see [sleep_rules]). It adds the columns `walking`, `sustained` and
+#' `micro_awake`, leaves the classic ones as they are, never scores a window without frames as sleep,
+#' and drops frames the tracker inferred. It needs 10-s windows and does not take `velocity_threshold`.
+#' @param k with `rule = "k"`, sustained events within a centred 60-s window that make a window awake.
+#' @param pixel with `rule = "k"`, one pixel in the units of `x`/`y`. `NULL` infers it ([pixel_size]):
+#' 1 for positions in pixels, 1/500 for positions as a fraction of the ROI width (as scopr loads them).
 #' @param ... extra arguments to be passed to `motion_classifier_FUN`.
 #' @return a [behavr] table similar to `data` with additional variables/annotations (i.e. `moving` and `asleep`).
 #' The resulting data will only have one data point every `time_window_length` seconds.
@@ -61,15 +69,25 @@ sleep_annotation <- function(data,
                             min_time_immobile = 300, #s = 5min
                             motion_detector_FUN = max_velocity_detector,
                             untracked = c("immobile", "break"),
+                            rule = c("classic", "k"),
+                            k = 3,
+                            pixel = NULL,
                             ...
 ){
   moving = .N = is_interpolated  = .SD = asleep = NULL
   untracked <- match.arg(untracked)
+  rule <- match.arg(rule)
+  if(rule == "k")
+    check_k_rule_args(time_window_length, k, pixel, list(...))
   # all columns likely to be needed.
   columns_to_keep <- c("t", "x", "y", "max_velocity", "velocity_threshold", "interactions",
-                       "beam_crosses", "moving","asleep", "is_interpolated")
+                       "beam_crosses", "moving","asleep", "is_interpolated",
+                       "walking", "sustained", "micro_awake")
 
   wrapped <- function(d){
+    if(rule == "k")
+      return(k_rule_annotation(d, time_window_length, min_time_immobile,
+                               motion_detector_FUN, k, pixel, columns_to_keep, ...))
     if(nrow(d) < 100)
       return(NULL)
     # todo if t not unique, stop
@@ -110,10 +128,16 @@ sleep_annotation <- function(data,
 }
 
 attr(sleep_annotation, "needed_columns") <- function(motion_detector_FUN = max_velocity_detector,
+                                                     rule = "classic",
                                                      ...){
   needed_columns <- attr(motion_detector_FUN, "needed_columns")
+  columns <- NULL
   if(!is.null(needed_columns))
-    needed_columns(...)
+    columns <- needed_columns(...)
+  # the k-rule also needs the y position of every frame
+  if(identical(rule, "k"))
+    columns <- unique(c(columns, "x", "y", "xy_dist_log10x1000"))
+  columns
 }
 
 #' @export
