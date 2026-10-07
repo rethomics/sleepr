@@ -7,8 +7,12 @@
 \alias{virtual_beam_cross_detector}
 \title{Motion detector for Ethocope data}
 \usage{
-max_velocity_detector(data, time_window_length,
-  velocity_correction_coef = 0.003, masking_duration = 6)
+max_velocity_detector(
+  data,
+  time_window_length,
+  velocity_correction_coef = 0.003,
+  masking_duration = 6
+)
 
 max_velocity_detector_legacy(data, velocity_threshold = 0.006)
 

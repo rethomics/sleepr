@@ -3,18 +3,18 @@ context("sleep_annotation")
 test_that("sleep_annotation works return expected results", {
   #rm(list=ls())
   data <- data.table::data.table(t=c(1:700), x=0.4)
-  d_small <- sleep_annotation(data, motion_detector_FUN = virtual_beam_cross_detector)
+  d_small <- sleep_annotation(data, motion_detector_FUN = virtual_beam_cross_detector, rule = "classic")
 
 
   expect_equal(sum(d_small[,moving]), 0)
 
   data[t == 20, x:=0]
-  d_small <- sleep_annotation(data, motion_detector_FUN = virtual_beam_cross_detector)
+  d_small <- sleep_annotation(data, motion_detector_FUN = virtual_beam_cross_detector, rule = "classic")
   expect_equal(sum(d_small[,moving]), 0)
 
 
   data[t == 20, x:=1]
-  d_small <- sleep_annotation(data, motion_detector_FUN = virtual_beam_cross_detector)
+  d_small <- sleep_annotation(data, motion_detector_FUN = virtual_beam_cross_detector, rule = "classic")
   expect_equal(sum(d_small[,moving]), 1)
 
 
@@ -28,10 +28,10 @@ test_that("sleep_annotation works for single or multiple animals", {
   data <- met[,list(t = t,
                     x = rnorm(1000)),by="id"]
 
-  first_animal <- sleep_annotation(data[id==1][, -"id", with=F], motion_detector_FUN = virtual_beam_cross_detector)
-  manual_multi_nanimal <- data[, sleep_annotation(.SD, motion_detector_FUN = virtual_beam_cross_detector), by="id"]
+  first_animal <- sleep_annotation(data[id==1][, -"id", with=F], motion_detector_FUN = virtual_beam_cross_detector, rule = "classic")
+  manual_multi_nanimal <- data[, sleep_annotation(.SD, motion_detector_FUN = virtual_beam_cross_detector, rule = "classic"), by="id"]
 
-  auto_multi_animal <- sleep_annotation(data, motion_detector_FUN = virtual_beam_cross_detector)
+  auto_multi_animal <- sleep_annotation(data, motion_detector_FUN = virtual_beam_cross_detector, rule = "classic")
 
   auto_multi_animal
 
@@ -63,7 +63,7 @@ test_that("sleep_annotation auto-fetches needed columns", {
     c("t", columns)
     }
 
-  cols <- foo(motion_detector_FUN = virtual_beam_cross_detector)
+  cols <- foo(motion_detector_FUN = virtual_beam_cross_detector, rule = "classic")
   expect_identical(cols, c("t", "x"))
 
   cols <- foo(motion_detector_FUN = max_velocity_detector)
