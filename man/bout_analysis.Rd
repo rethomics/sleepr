@@ -9,8 +9,8 @@ bout_analysis(var, data)
 \arguments{
 \item{var}{name of the variable to use from \code{data}}
 
-\item{data}{\link{data.table} containing behavioural variable from or one multiple animals.
-When it has a key, unique values, are assumed to represent unique individuals (e.g. in a \link{behavr} table).
+\item{data}{\link[data.table:data.table]{data.table::data.table} containing behavioural variable from or one multiple animals.
+When it has a key, unique values, are assumed to represent unique individuals (e.g. in a \link[behavr:behavr]{behavr::behavr} table).
 Otherwise, it analysis the data as coming from a single animal. \code{data} must have a column \code{t} representing time.}
 }
 \value{
@@ -19,7 +19,7 @@ Each row is a specific bout characterised by three columns.
 \itemize{
 \item \code{t} -- its \emph{onset}
 \item \code{duration} --  its length
-\item \code{<var>} -- a column with the same name as \code{var}. The value of \code{var} for this bout.
+\item \verb{<var>} -- a column with the same name as \code{var}. The value of \code{var} for this bout.
 }
 }
 \description{

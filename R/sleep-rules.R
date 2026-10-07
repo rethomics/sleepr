@@ -20,9 +20,16 @@
 #' what keeps their sleep. `untracked = "break"` never scores such windows as sleep
 #' and reproduces the reference rule exactly.
 #'
-#' The rule is tentative and opt-in, through `sleep_annotation(rule = "k")`. The
-#' algorithm and its defaults are identical to ethoscopy's `sleep_rules` module,
-#' so both packages score the same data alike.
+#' Evidence: against pixel-motion truth from video, night-time error per animal
+#' was 0.03-0.07 with either tracker; and in 136 air-puff runs (1,319 flies),
+#' flies the rule scores asleep, by day too, respond to puffs like sleeping
+#' flies (real minus sham response +1.2 percentage points asleep by every rule,
+#' +3.2 asleep only at k = 3, +5.2 awake).
+#'
+#' Choose it with `sleep_annotation(rule = "k")`, or declare it once with
+#' `options(sleepr.sleep_rule = "k")`; `sleep_annotation` has no default rule.
+#' The algorithm and its defaults are identical to ethoscopy's `sleep_rules`
+#' module, so both packages score the same data alike.
 #'
 #' @name sleep_rules
 #' @param x,y positions of one animal, one per frame, in recording order.
@@ -213,3 +220,55 @@ k_rule_annotation <- function(d, time_window_length, min_time_immobile,
   d_small <- stats::na.omit(d[d_small, on = c("t"), roll = TRUE], cols = c("t", "asleep"))
   d_small[, intersect(columns_to_keep, colnames(d_small)), with = FALSE]
 }
+
+#' the sleep rule declared for the session, or NULL
+#' @noRd
+declared_sleep_rule <- function(){
+  rule <- getOption("sleepr.sleep_rule")
+  if(is.null(rule) || !nzchar(rule))
+    rule <- Sys.getenv("SLEEPR_SLEEP_RULE")
+  if(!nzchar(rule)) NULL else rule
+}
+
+#' rule and k for one call: argument, then option, then environment
+#' @noRd
+resolve_sleep_rule <- function(rule, k){
+  if(is.null(rule))
+    rule <- declared_sleep_rule()
+  if(is.null(rule))
+    stop(RULE_REQUIRED_MESSAGE, call. = FALSE)
+  name <- tolower(trimws(rule))
+  k_from_name <- NULL
+  if(grepl("^k[0-9]+$", name)){
+    k_from_name <- as.integer(sub("^k", "", name))
+    name <- "k"
+  }
+  if(!name %in% c("classic", "k") || (!is.null(k_from_name) && k_from_name < 1))
+    stop(sprintf('unknown sleep rule "%s": use "classic", "k" or e.g. "k3"', rule), call. = FALSE)
+  if(is.null(k))
+    k <- if(is.null(k_from_name)) 3 else k_from_name
+  list(rule = name, k = k)
+}
+
+RULE_REQUIRED_MESSAGE <- paste(
+  "sleep_annotation now needs a sleep rule: 'classic' or 'k'.",
+  "",
+  "rule = 'classic' is the 5-minute rule as before: any frame faster than the velocity",
+  "threshold counts as movement. On current ethoscope data, tracking noise and brief",
+  "twitches break sleep into fragments under it.",
+  "",
+  "rule = 'k' (k = 3 by default) ignores flickers and isolated micro-movements, and counts",
+  "movement only when it is sustained or walking. It matches video ground truth at night,",
+  "and flies it scores asleep respond to air puffs like sleeping flies.",
+  "",
+  "Use 'classic' to reproduce earlier analyses, and 'k' for new ones. Declare it once:",
+  "",
+  "    options(sleepr.sleep_rule = \"classic\")   # or \"k\", \"k3\", \"k2\"",
+  "    # or, without touching the code: SLEEPR_SLEEP_RULE=classic in .Renviron",
+  "",
+  "or per call; scopr passes extra arguments to FUN:",
+  "",
+  "    dt <- load_ethoscope(metadata, FUN = sleep_annotation, rule = \"k\")",
+  "",
+  "See ?sleep_rules",
+  sep = "\n")

@@ -17,22 +17,9 @@
 #' @inheritParams sleep_annotation
 #' @param masking_duration number of seconds during which any movement is ignored (velocity is set to 0) after
 #' a stimulus is delivered (a.k.a. interaction).
-#' @param velocity_threshold for [max_velocity_detector], corrected velocity above which an animal is
-#' classified as `moving' (default 1), or `"auto"` to estimate it from the animal's own tracking noise,
-#' separately for the light and dark phase (see [motion_calibration]).
-#' For [max_velocity_detector_legacy], the uncorrected velocity threshold.
-#' @param threshold_quantile,threshold_floor with `velocity_threshold = "auto"`, the quantile of still-window
-#' velocity used as threshold (a still animal is scored as moving in `1 - quantile` of windows)
-#' and the lowest threshold allowed.
-#' @param day_length,lights_off with `velocity_threshold = "auto"`, the light cycle in hours used to split
-#' light and dark phase; `t` must be 0 at lights on.
-#' @param remove_spikes drop tracking spikes -- frames where the centroid jumps more than 3 px and lands back
-#' on the same pixel within two frames (see [find_spikes]) -- before computing velocity and position.
-#' `NULL` (default) enables it together with `velocity_threshold = "auto"`, whose calibration they would
-#' otherwise inflate.
+#' @param velocity_threshold uncorrected velocity above which an animal is classified as `moving' (for the legacy version).
 #' @return an object of the same type as `data` (i.e. [data.table::data.table] or [behavr::behavr])  with additional columns:
 #' * `moving` Logical, TRUE iff. motion was detected.
-#' * `velocity_threshold` (only with `velocity_threshold = "auto"`) the threshold applied to each window.
 #' * `beam_crosses` The number of beam crosses
 #' (when the animal crosses x = 0.5 -- that is the midpoint of the region of interest) within the time window
 #' * `max_velocity` The maximal velocity within the time window.
@@ -45,28 +32,15 @@
 max_velocity_detector  <- function(data,
                                    time_window_length,
                                    velocity_correction_coef =3e-3,
-                                   masking_duration=6,
-                                   velocity_threshold = 1,
-                                   threshold_quantile = 0.99,
-                                   threshold_floor = 1,
-                                   day_length = 24,
-                                   lights_off = 12,
-                                   remove_spikes = NULL){
-  auto_threshold <- identical(velocity_threshold, "auto")
-  if(is.character(velocity_threshold) && !auto_threshold)
-    stop('velocity_threshold must be a number or "auto"')
-  if(!auto_threshold && !(is.numeric(velocity_threshold) && velocity_threshold > 0))
-    stop("velocity_threshold must be positive")
+                                   masking_duration=6){
   dt = x = .N = . = velocity = moving = dist = beam_cross = has_interacted = NULL
   dt = beam_crossed =  interaction_id = masked = interactions =  NULL
   xy_dist_log10x1000 = max_velocity = velocity_corrected = NULL
 
-  y = NULL
-  # velocity_threshold is either the argument or, with "auto", a column of d_small
   d <- prepare_data_for_motion_detector(data,
                                         c("t", "xy_dist_log10x1000", "x"),
                                         time_window_length,
-                                        c("has_interacted", "y"))
+                                        "has_interacted")
   d[,dt := c(NA,diff(t))]
   #d[,surface_change := xor_dist * 1e-3]
   d[,dist := 10^(xy_dist_log10x1000/1000) ]
@@ -76,19 +50,6 @@ max_velocity_detector  <- function(data,
 
   d[,beam_cross := abs(c(0,diff(sign(.5 - x))))]
   d[,beam_cross := as.logical(beam_cross)]
-
-  if(is.null(remove_spikes))
-    remove_spikes <- auto_threshold
-  spike_v <- rep(FALSE, nrow(d))
-  if(remove_spikes && nrow(d) > 2){
-    if(!"y" %in% colnames(d))
-      d[, y := 0]
-    spikes <- find_spikes(d$t, d$x, d$y)
-    spike_v <- spikes$velocity
-    # spike frames can neither move the animal nor cross the midline
-    d[spike_v, beam_cross := FALSE]
-    d[spikes$position, `:=`(x = NA_real_, y = NA_real_)]
-  }
 
   # masking here
   if(!"has_interacted" %in% colnames(d)){
@@ -111,42 +72,16 @@ max_velocity_detector  <- function(data,
   # end of masking
 
   d[, velocity_corrected :=  velocity  * dt  /a]
-  d[spike_v, velocity_corrected := NA_real_]
   d_small <- d[,.(
-    max_velocity = if(remove_spikes) max_or_na(velocity_corrected[2:.N]) else max(velocity_corrected[2:.N]),
+    max_velocity = max(velocity_corrected[2:.N]),
     # dist = sum(dist[2:.N]),
     interactions = as.integer(sum(has_interacted)),
     beam_crosses = as.integer(sum(beam_cross))
   ), by="t_round"]
 
+  d_small[, moving :=  ifelse(max_velocity > 1, TRUE,FALSE)]
   data.table::setnames(d_small, "t_round", "t")
-  if(auto_threshold){
-    # mean position per window, only needed to find still windows
-    if(!"y" %in% colnames(d))
-      d[, y := 0]
-    pos <- d[, .(x = mean(x, na.rm = TRUE), y = mean(y, na.rm = TRUE)), by = "t_round"]
-    calib <- estimate_velocity_threshold(
-      data.table::data.table(t = d_small$t, x = pos$x, y = pos$y,
-                             max_velocity = d_small$max_velocity),
-      time_window_length = time_window_length,
-      quantile = threshold_quantile,
-      floor = threshold_floor,
-      day_length = day_length,
-      lights_off = lights_off)
-    d_small[, velocity_threshold := calib$threshold]
-  }
-  d_small[, moving :=  ifelse(max_velocity > velocity_threshold, TRUE,FALSE)]
-  # a window made only of spike frames has no velocity: it is not movement
-  if(remove_spikes)
-    d_small[is.na(moving), moving := FALSE]
   d_small
-}
-
-#' max() that returns NA instead of -Inf (with a warning) when all values are NA
-#' @noRd
-max_or_na <- function(v){
-  v <- v[!is.na(v)]
-  if(length(v) == 0) NA_real_ else max(v)
 }
 
 attr(max_velocity_detector, "needed_columns") <- function(...){

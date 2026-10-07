@@ -116,7 +116,7 @@ test_that("classic columns under rule = 'k' are those of rule = 'classic'", {
   d <- raw_track(120, inferred)
   # inferred frames repeating a movement: classic counts them, the k-rule drops them
   d[501:505, xy_dist_log10x1000 := MOVE]
-  classic <- sleep_annotation(data.table::copy(d), masking_duration = 0)
+  classic <- sleep_annotation(data.table::copy(d), rule = "classic", masking_duration = 0)
   k <- sleep_annotation(data.table::copy(d), rule = "k", masking_duration = 0)
   shared <- intersect(setdiff(names(classic), "asleep"), names(k))
   expect_equal(k[t %in% classic$t, shared, with = FALSE], classic[, shared, with = FALSE])
@@ -181,4 +181,32 @@ test_that("sleep_annotation(rule = 'k') reproduces the reference on a real recor
     out <- sleep_annotation(data.table::copy(f), rule = "k", pixel = 1, untracked = "break")
     expect_identical(out$asleep, ref$asleep_k3, info = fly_id)
   }
+})
+
+test_that("sleep_annotation needs a rule, and it can be declared once", {
+  d <- raw_track()
+  withr_reset <- function() { options(sleepr.sleep_rule = NULL); Sys.unsetenv("SLEEPR_SLEEP_RULE") }
+  withr_reset()
+  on.exit(withr_reset(), add = TRUE)
+  err <- tryCatch(sleep_annotation(d), error = function(e) conditionMessage(e))
+  expect_match(err, "rule = 'classic'", fixed = TRUE)
+  expect_match(err, "rule = 'k'", fixed = TRUE)
+  expect_match(err, "sleepr.sleep_rule", fixed = TRUE)
+  expect_match(err, "load_ethoscope(metadata, FUN = sleep_annotation", fixed = TRUE)
+  options(sleepr.sleep_rule = "k")
+  expect_true("walking" %in% names(sleep_annotation(d, masking_duration = 0)))
+  expect_false("walking" %in% names(sleep_annotation(d, rule = "classic", masking_duration = 0)))
+  options(sleepr.sleep_rule = NULL)
+  Sys.setenv(SLEEPR_SLEEP_RULE = "k2")
+  expect_true("walking" %in% names(sleep_annotation(d, masking_duration = 0)))
+  expect_error(sleep_annotation(d, rule = "k0"))
+  needed <- attr(sleep_annotation, "needed_columns")
+  expect_true("y" %in% needed())
+})
+
+test_that("rule names carry k", {
+  expect_equal(resolve_sleep_rule("k2", NULL), list(rule = "k", k = 2L))
+  expect_equal(resolve_sleep_rule("k", NULL), list(rule = "k", k = 3))
+  expect_equal(resolve_sleep_rule("k3", 2), list(rule = "k", k = 2))
+  expect_equal(resolve_sleep_rule("classic", NULL)$rule, "classic")
 })

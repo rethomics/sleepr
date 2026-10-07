@@ -4,12 +4,17 @@
 \alias{curate_dead_animals}
 \title{Remove -- irrelevant -- data after individual have died}
 \usage{
-curate_dead_animals(data, moving_var = moving, time_window = hours(24),
-  prop_immobile = 0.01, resolution = 24)
+curate_dead_animals(
+  data,
+  moving_var = moving,
+  time_window = hours(24),
+  prop_immobile = 0.01,
+  resolution = 24
+)
 }
 \arguments{
-\item{data}{\link{data.table} containing behavioural variable from or one multiple animals.
-When it has a key, unique values, are assumed to represent unique individuals (e.g. in a \link{behavr} table).
+\item{data}{\link[data.table:data.table]{data.table::data.table} containing behavioural variable from or one multiple animals.
+When it has a key, unique values, are assumed to represent unique individuals (e.g. in a \link[behavr:behavr]{behavr::behavr} table).
 Otherwise, it analysis the data as coming from a single animal. \code{data} must have a column \code{t} representing time.}
 
 \item{moving_var}{logical variable in \code{data} used to define the moving (alive) state (default is \code{moving})}
@@ -55,6 +60,6 @@ ggplot(data=dt1[,test:=1],aes(t, as.numeric(moving))) +
 }
 \seealso{
 \itemize{
-\item \link{sleep_annotation} -- to score movement and slepe
+\item \link{sleep_annotation} -- to score movement and sleep
 }
 }

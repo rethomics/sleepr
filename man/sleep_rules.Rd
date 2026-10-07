@@ -74,9 +74,16 @@ was last seen. Background-subtraction tracking loses still flies, so this is
 what keeps their sleep. \code{untracked = "break"} never scores such windows as sleep
 and reproduces the reference rule exactly.
 
-The rule is tentative and opt-in, through \code{sleep_annotation(rule = "k")}. The
-algorithm and its defaults are identical to ethoscopy's \code{sleep_rules} module,
-so both packages score the same data alike.
+Evidence: against pixel-motion truth from video, night-time error per animal
+was 0.03-0.07 with either tracker; and in 136 air-puff runs (1,319 flies),
+flies the rule scores asleep, by day too, respond to puffs like sleeping
+flies (real minus sham response +1.2 percentage points asleep by every rule,
++3.2 asleep only at k = 3, +5.2 awake).
+
+Choose it with \code{sleep_annotation(rule = "k")}, or declare it once with
+\code{options(sleepr.sleep_rule = "k")}; \code{sleep_annotation} has no default rule.
+The algorithm and its defaults are identical to ethoscopy's \code{sleep_rules}
+module, so both packages score the same data alike.
 }
 \section{Functions}{
 \itemize{

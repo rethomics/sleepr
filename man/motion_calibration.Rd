@@ -7,8 +7,7 @@
 \alias{light_phase}
 \alias{find_spikes}
 \alias{find_still_bins}
-\alias{estimate_velocity_threshold}
-\title{Noise-calibrated movement thresholds}
+\title{Tracking-noise diagnostics}
 \usage{
 pixel_size(x)
 
@@ -32,17 +31,6 @@ find_still_bins(
   context_bins = 3,
   max_shift = NULL
 )
-
-estimate_velocity_threshold(
-  d_small,
-  time_window_length = 10,
-  quantile = 0.99,
-  floor = 1,
-  day_length = 24,
-  lights_off = 12,
-  min_still_bins = 100,
-  max_shift = NULL
-)
 }
 \arguments{
 \item{x}{x positions of one animal.}
@@ -64,7 +52,7 @@ estimate_velocity_threshold(
 \item{max_span}{longest time from the last good frame to the return, in seconds.}
 
 \item{d_small}{binned data of \emph{a single animal}, with columns \code{t}, \code{x}, \code{y}
-(mean position per window) and, for \link{estimate_velocity_threshold}, \code{max_velocity}.}
+(mean position per window).}
 
 \item{time_window_length}{window size in seconds.}
 
@@ -72,33 +60,22 @@ estimate_velocity_threshold(
 
 \item{max_shift}{largest positional change still counted as still, in the
 units of \code{x}/\code{y}. \code{NULL} uses one pixel (\link{default_still_shift}).}
-
-\item{quantile}{quantile of still-window velocity used as the threshold, so a
-still animal is scored as moving in \code{1 - quantile} of windows.}
-
-\item{floor}{lowest threshold allowed; keeps clean recordings on the classic value of 1.}
-
-\item{min_still_bins}{still windows needed for an estimate. A phase with fewer
-borrows the whole-recording estimate, else \code{floor}, with a warning.}
 }
 \description{
 \link{max_velocity_detector} calls a time window "moving" when its peak corrected
-velocity exceeds a threshold. A fixed threshold assumes every recording has
-the same tracking noise, but noise depends on the illumination, camera, frame
-rate and animal size. When it sits near the threshold, a motionless animal
-produces spurious "movements" that fragment every immobility bout: a bout of
-5 min needs 30 consecutive immobile 10-s windows, so a per-window false
-positive rate \code{p} leaves only \code{(1 - p)^30} of true rests intact.
+velocity exceeds a threshold. When a motionless animal's tracking noise sits
+near it, spurious "movements" fragment every immobility bout: a bout of 5 min
+needs 30 consecutive immobile 10-s windows, so a per-window false positive rate
+\code{p} leaves only \code{(1 - p)^30} of true rests intact.
 }
 \details{
-These functions estimate the threshold from each animal's own noise. Windows
-in which the animal is still are found \emph{from position alone} -- its position
-over the half-minute either side of the window stays within one pixel --
-so the estimate does not depend on the velocity it is calibrating. The
-threshold is a high quantile of peak velocity in those still windows,
-computed separately for the light and dark phase because illumination changes
-the noise. The algorithm and its defaults are identical to ethoscopy's
-\code{motion_calibration} module, so both packages score the same data alike.
+These helpers support \link{motion_qc}, which reports how often a still animal
+crosses the fixed threshold. Windows in which the animal is still are found
+\emph{from position alone} -- its position over the half-minute either side of the
+window stays within one pixel -- so the check does not depend on the velocity
+it checks. Where the fixed threshold fails, score sleep with
+\code{sleep_annotation(rule = "k")} (\link{sleep_rules}). The algorithms and defaults are
+identical to ethoscopy's \code{motion_calibration} module.
 }
 \section{Functions}{
 \itemize{
@@ -126,11 +103,7 @@ window must agree, and the positions across the whole window must agree once
 the single highest and lowest window are set aside, so that a glitch in one
 window is forgiven but pacing back and forth is not.
 
-\item \code{estimate_velocity_threshold()}: list with \code{threshold} (one value per row of
-\code{d_small}) and \code{summary} (a \link[data.table:data.table]{data.table::data.table} with one row per phase:
-\code{phase}, \code{threshold}, \code{n_still}, \code{source} -- \code{"phase"}, \code{"recording"} or \code{"floor"}).
-
 }}
 \seealso{
-\link{max_velocity_detector}, \link{motion_qc}
+\link{max_velocity_detector}, \link{motion_qc}, \link{sleep_rules}
 }

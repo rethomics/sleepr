@@ -11,8 +11,8 @@ sleep_annotation(
   min_time_immobile = 300,
   motion_detector_FUN = max_velocity_detector,
   untracked = c("immobile", "break"),
-  rule = c("classic", "k"),
-  k = 3,
+  rule = NULL,
+  k = NULL,
   pixel = NULL,
   ...
 )
@@ -20,8 +20,8 @@ sleep_annotation(
 sleep_dam_annotation(data, min_time_immobile = 300)
 }
 \arguments{
-\item{data}{\link{data.table} containing behavioural variable from or one multiple animals.
-When it has a key, unique values, are assumed to represent unique individuals (e.g. in a \link{behavr} table).
+\item{data}{\link[data.table:data.table]{data.table::data.table} containing behavioural variable from or one multiple animals.
+When it has a key, unique values, are assumed to represent unique individuals (e.g. in a \link[behavr:behavr]{behavr::behavr} table).
 Otherwise, it analysis the data as coming from a single animal. \code{data} must have a column \code{t} representing time.}
 
 \item{time_window_length}{number of seconds to be used by the motion classifier.
@@ -37,14 +37,20 @@ as immobility, so they can extend or create sleep bouts; \code{"break"} ends a b
 scored where the animal was seen still. \code{moving} is unaffected either way. With \code{rule = "k"}, \code{"immobile"}
 also measures the step after such windows from the last position seen.}
 
-\item{rule}{\code{"classic"} (default) scores a window as sleep when no frame passed the movement threshold
-for \code{min_time_immobile}. \code{"k"} (tentative) scores it from walking and sustained movement events,
-ignoring tracking noise (see \link{sleep_rules}). It adds the columns \code{walking}, \code{sustained} and
+\item{rule}{\code{"classic"}, \code{"k"}, or \code{"k"} with its k (\code{"k3"}, \code{"k2"}). There is no built-in
+default: without it, \code{getOption("sleepr.sleep_rule")} is used, then the environment variable
+\code{SLEEPR_SLEEP_RULE}, and with none of these \code{sleep_annotation} stops with an explanation.
+Use \code{"classic"} to reproduce earlier analyses and \code{"k"} for new ones. \code{"classic"} scores a window
+as sleep when no frame passed the movement threshold for \code{min_time_immobile} (the 5-minute rule).
+\code{"k"} scores it from walking and sustained movement events, ignoring flickers and isolated
+micro-movements (see \link{sleep_rules}); it matches video ground truth at night, and flies it scores
+asleep respond to air puffs like sleeping flies. It adds the columns \code{walking}, \code{sustained} and
 \code{micro_awake}, leaves the classic ones as they are and drops frames the tracker inferred. With
 \code{untracked = "break"} it reproduces the reference rule exactly. It needs 10-s windows and does not take
 \code{velocity_threshold}.}
 
-\item{k}{with \code{rule = "k"}, sustained events within a centred 60-s window that make a window awake.}
+\item{k}{with \code{rule = "k"}, sustained events within a centred 60-s window that make a window awake.
+\code{NULL} takes it from the rule name (\code{"k2"}) or uses 3.}
 
 \item{pixel}{with \code{rule = "k"}, one pixel in the units of \code{x}/\code{y}. \code{NULL} infers it (\link{pixel_size}):
 1 for positions in pixels, 1/500 for positions as a fraction of the ROI width (as scopr loads them).}
@@ -52,7 +58,7 @@ ignoring tracking noise (see \link{sleep_rules}). It adds the columns \code{walk
 \item{...}{extra arguments to be passed to \code{motion_classifier_FUN}.}
 }
 \value{
-a \link{behavr} table similar to \code{data} with additional variables/annotations (i.e. \code{moving} and \code{asleep}).
+a \link[behavr:behavr]{behavr::behavr} table similar to \code{data} with additional variables/annotations (i.e. \code{moving} and \code{asleep}).
 The resulting data will only have one data point every \code{time_window_length} seconds.
 }
 \description{
@@ -68,7 +74,7 @@ so that analysis can be performed on the go.
 \examples{
 dt_one_animal <- toy_ethoscope_data(seed=2)
 ####### Ethoscope, corrected velocity classification #########
-sleep_dt <-  sleep_annotation(dt_one_animal, masking_duration=0)
+sleep_dt <-  sleep_annotation(dt_one_animal, rule = "classic", masking_duration=0)
 print(sleep_dt)
 # We could make a sleep `barecode'
 \dontrun{
@@ -77,7 +83,7 @@ ggplot(sleep_dt, aes(t,y="Animal 1",fill=asleep)) +
                                    geom_tile() + scale_x_time()
 }
 ####### Ethoscope, virutal beam cross classification #########
-sleep_dt2 <-  sleep_annotation(dt_one_animal,
+sleep_dt2 <-  sleep_annotation(dt_one_animal, rule = "classic",
                              motion_detector_FUN=virtual_beam_cross_detector)
 \dontrun{
 library(ggplot2)

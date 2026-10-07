@@ -2,7 +2,7 @@
 % Please edit documentation in R/motion-calibration.R
 \name{motion_qc}
 \alias{motion_qc}
-\title{Check how well a fixed movement threshold fits the tracking noise}
+\title{Check how well the fixed movement threshold fits the tracking noise}
 \usage{
 motion_qc(
   data,
@@ -10,7 +10,6 @@ motion_qc(
   velocity_correction_coef = 0.003,
   velocity_threshold = 1,
   min_time_immobile = 300,
-  quantile = 0.99,
   day_length = 24,
   lights_off = 12
 )
@@ -28,9 +27,6 @@ to variable framerate.}
 
 \item{min_time_immobile}{sleep criterion in seconds.}
 
-\item{quantile}{quantile of still-window velocity used as the threshold, so a
-still animal is scored as moving in \code{1 - quantile} of windows.}
-
 \item{day_length}{length of the day in hours.}
 
 \item{lights_off}{hour of lights off.}
@@ -39,17 +35,18 @@ still animal is scored as moving in \code{1 - quantile} of windows.}
 a \link[data.table:data.table]{data.table::data.table} with one row per animal and phase:
 \code{phase}, \code{n_bins}, \code{untracked_fraction}, \code{spike_fraction} (frames that are
 tracking spikes, see \link{find_spikes}), \code{n_still}, \code{fp_rate_fixed},
-\code{rest_survival_fixed}, \code{auto_threshold}, \code{auto_source}.
+\code{rest_survival_fixed}.
 }
 \description{
 Run on raw ethoscope data before scoring sleep. For each animal and light
 phase it reports how often a still animal crosses the fixed threshold
 (\code{fp_rate_fixed}) and what fraction of genuine rests of \code{min_time_immobile}
-would survive that (\code{rest_survival_fixed}, \code{(1 - fp)^windows}), alongside the
-threshold \code{velocity_threshold = "auto"} would use. \code{fp_rate_fixed} above about
-0.01, or a large \code{untracked_fraction}, means fixed-threshold sleep estimates
-are unreliable.
+would survive that (\code{rest_survival_fixed}, \code{(1 - fp)^windows}).
+\code{fp_rate_fixed} above about 0.01 means classic sleep estimates are unreliable;
+score sleep with \code{sleep_annotation(rule = "k")} instead. A large
+\code{untracked_fraction} matters under either rule: with the default
+\code{untracked = "immobile"}, windows where the animal was lost count as still.
 }
 \seealso{
-\link{motion_calibration}
+\link{motion_calibration}, \link{sleep_rules}
 }

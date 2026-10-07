@@ -29,60 +29,16 @@ make_track <- function(hours = 4, fps = 2, noise_light = 0.9, noise_dark = 0.9,
 rest_sleep <- function(res, active_minutes = 10, settle_minutes = 6)
   res[(t %% 3600) >= (active_minutes + settle_minutes) * 60, mean(asleep)]
 
-detector <- function(...) max_velocity_detector(..., day_length = 2, lights_off = 1)
-
-test_that("auto threshold recovers sleep that noise erases", {
-  d <- make_track()
-  fixed <- sleep_annotation(d, motion_detector_FUN = detector)
-  auto <- sleep_annotation(d, motion_detector_FUN = detector, velocity_threshold = "auto")
-  # the method targets 1% false positives; where those land decides how many rest
-  # fragments fall under 5 min, so sleep varies ~0.90-0.98 by seed
-  expect_lt(auto[(t %% 3600) >= 16 * 60, mean(moving)], 0.02)
-  expect_lt(rest_sleep(fixed), 0.2)
-  expect_gt(rest_sleep(auto), 0.85)
-  expect_true("velocity_threshold" %in% colnames(auto))
-})
-
-test_that("auto threshold keeps walking as movement", {
-  res <- detector(make_track(), 10, velocity_threshold = "auto")
-  expect_gt(res[(t %% 3600) < 9 * 60, mean(moving)], 0.95)
-})
-
-test_that("clean recording is unchanged by auto", {
-  d <- make_track(noise_light = 0.3, noise_dark = 0.3)
-  fixed <- detector(d, 10)
-  auto <- detector(d, 10, velocity_threshold = "auto")
-  expect_true(all(auto$velocity_threshold == 1))
-  expect_identical(fixed$moving, auto$moving)
-})
-
-test_that("light and dark phase get their own threshold", {
-  res <- detector(make_track(noise_light = 1.3, noise_dark = 0.5), 10,
-                  velocity_threshold = "auto")
-  ph <- light_phase(res$t, 2, 1)
-  expect_equal(unique(res$velocity_threshold[ph == "dark"]), 1)
-  expect_gt(unique(res$velocity_threshold[ph == "light"]), 1.3)
-})
-
-test_that("no still bins falls back to the floor with a warning", {
-  d <- make_track(always_active = TRUE)
-  expect_warning(res <- detector(d, 10, velocity_threshold = "auto"), "still bins")
-  expect_true(all(res$velocity_threshold == 1))
-})
-
 test_that("invalid arguments are rejected", {
   d <- make_track(hours = 1)
-  expect_error(max_velocity_detector(d, 10, velocity_threshold = "automatic"), "auto")
-  expect_error(sleep_annotation(d, untracked = "skip"))
-  expect_error(estimate_velocity_threshold(
-    data.table::data.table(t = 0, x = 0, y = 0, max_velocity = 1), quantile = 1.5), "quantile")
+  expect_error(sleep_annotation(d, rule = "classic", untracked = "skip"))
 })
 
 test_that("untracked = 'break' ends sleep at untracked windows", {
   gap <- c(3600 + 30 * 60, 3600 + 40 * 60)
   d <- make_track(noise_light = 0.3, noise_dark = 0.3, gap = gap)
-  immobile <- sleep_annotation(d, untracked = "immobile")
-  broken <- sleep_annotation(d, untracked = "break")
+  immobile <- sleep_annotation(d, rule = "classic", untracked = "immobile")
+  broken <- sleep_annotation(d, rule = "classic", untracked = "break")
   in_gap <- immobile$t >= gap[1] & immobile$t < gap[2]
   expect_true(all(immobile$is_interpolated[in_gap]))
   expect_true(all(immobile$asleep[in_gap]))
@@ -122,15 +78,13 @@ test_that("motion_qc flags a noisy recording", {
   expect_true(all(qc[id == "noisy", fp_rate_fixed] > 0.5))
   expect_true(all(qc[id == "noisy", rest_survival_fixed] < 0.01))
   expect_true(all(qc[id == "clean", fp_rate_fixed] == 0))
-  expect_true(all(qc[id == "clean", auto_threshold] == 1))
+  expect_false("auto_threshold" %in% names(qc))
 })
 
-test_that("calibration matches ethoscopy on the same binned data", {
-  # parity_binned.csv: binned data and ethoscopy's still bins and thresholds
+test_that("still bins match ethoscopy on the same binned data", {
+  # parity_binned.csv: binned data and ethoscopy's still bins
   ref <- data.table::fread(test_path("parity_binned.csv"))
   expect_identical(find_still_bins(ref), as.logical(ref$still))
-  res <- suppressWarnings(estimate_velocity_threshold(ref, day_length = 2, lights_off = 1))
-  expect_equal(res$threshold, ref$threshold, tolerance = 1e-9)
 })
 
 test_that("one and two frame spikes are found, real moves are not", {
@@ -147,29 +101,10 @@ test_that("one and two frame spikes are found, real moves are not", {
   expect_false(any(far$velocity))
 })
 
-test_that("spikes do not inflate the auto threshold", {
-  d <- make_track(spike_rate = 0.004)
-  with_removal <- sleep_annotation(d, motion_detector_FUN = detector, velocity_threshold = "auto")
-  without <- detector(d, 10, velocity_threshold = "auto", remove_spikes = FALSE)
-  expect_gt(max(without$velocity_threshold), 5)
-  expect_lt(max(with_removal$velocity_threshold), 1.5)
-  expect_gt(rest_sleep(with_removal), 0.85)
-  expect_false(anyNA(with_removal$moving))
-})
-
-test_that("fixed threshold keeps spikes unless asked", {
-  d <- make_track(noise_light = 0.3, noise_dark = 0.3, spike_rate = 0.004)
-  default <- detector(d, 10)
-  cleaned <- detector(d, 10, remove_spikes = TRUE)
-  rest <- (default$t %% 3600) >= 16 * 60
-  expect_gt(mean(default$moving[rest], na.rm = TRUE), 0.05)
-  expect_equal(mean(cleaned$moving[rest]), 0)
+test_that("motion_qc reports spikes", {
   spiky <- make_track(spike_rate = 0.004)
   qc <- motion_qc(spiky, day_length = 2, lights_off = 1)
   expect_true(all(qc$spike_fraction > 0.002))
-  # the reported auto threshold is the one "auto" applies, i.e. after spike removal
-  applied <- detector(spiky, 10, velocity_threshold = "auto")
-  expect_equal(max(qc$auto_threshold), max(applied$velocity_threshold))
 })
 
 test_that("spike detection matches ethoscopy on the same frames", {
